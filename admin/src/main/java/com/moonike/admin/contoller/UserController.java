@@ -1,5 +1,6 @@
 package com.moonike.admin.contoller;
 
+import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.dto.resp.UserRespDTO;
 import com.moonike.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +21,13 @@ public class UserController {
      * 根据用户名查询用户信息
      */
     @GetMapping("/api/shortlink/v1/user/{username}")
-    public UserRespDTO getUserByUsername (@PathVariable("username") String username) {
-        return userService.getUserByUsername(username);
+    public Result<UserRespDTO> getUserByUsername (@PathVariable("username") String username) {
+        UserRespDTO result = userService.getUserByUsername(username);
+        if (result == null) {
+            return new Result<UserRespDTO>().setCode("-1").setMessage("用户查询结果为空");
+        } else {
+            return new Result<UserRespDTO>().setCode("0").setData(result);
+        }
     }
 
 
