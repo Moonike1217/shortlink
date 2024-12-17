@@ -1,6 +1,9 @@
 package com.moonike.admin.contoller;
 
+import com.moonike.admin.common.convention.exception.ClientException;
 import com.moonike.admin.common.convention.result.Result;
+import com.moonike.admin.common.convention.result.Results;
+import com.moonike.admin.common.enums.UserErrorCodeEnum;
 import com.moonike.admin.dto.resp.UserRespDTO;
 import com.moonike.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +27,9 @@ public class UserController {
     public Result<UserRespDTO> getUserByUsername (@PathVariable("username") String username) {
         UserRespDTO result = userService.getUserByUsername(username);
         if (result == null) {
-            return new Result<UserRespDTO>().setCode("-1").setMessage("用户查询结果为空");
+            throw new ClientException(UserErrorCodeEnum.USER_NULL);
         } else {
-            return new Result<UserRespDTO>().setCode("0").setData(result);
+            return Results.success(result);
         }
     }
 

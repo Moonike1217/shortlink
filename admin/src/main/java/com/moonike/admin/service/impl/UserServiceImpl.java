@@ -3,6 +3,8 @@ package com.moonike.admin.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.moonike.admin.common.convention.exception.ClientException;
+import com.moonike.admin.common.enums.UserErrorCodeEnum;
 import com.moonike.admin.dao.entity.UserDO;
 import com.moonike.admin.dao.mapper.UserMapper;
 import com.moonike.admin.dto.resp.UserRespDTO;
@@ -26,7 +28,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         // 将查询结果转换为 DTO
         UserRespDTO result = new UserRespDTO();
         if (userDO == null) {
-            return null;
+            throw new ClientException(UserErrorCodeEnum.USER_NULL);
         } else {
             BeanUtils.copyProperties(userDO, result);
             return result;
