@@ -2,6 +2,7 @@ package com.moonike.admin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.moonike.admin.dao.entity.UserDO;
+import com.moonike.admin.dto.req.UserRegisterReqDTO;
 import com.moonike.admin.dto.resp.UserRespDTO;
 
 /**
@@ -22,4 +23,10 @@ public interface UserService extends IService<UserDO> {
      * @return true:存在 false:不存在
      */
     Boolean hasUserName(String username);
+
+    /**
+     * 注册用户
+     * @param requestParam 用户注册请求参数
+     */
+    void register(UserRegisterReqDTO requestParam);
 }
