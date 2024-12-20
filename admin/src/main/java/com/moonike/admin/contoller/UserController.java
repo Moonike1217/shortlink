@@ -1,9 +1,7 @@
 package com.moonike.admin.contoller;
 
-import com.moonike.admin.common.convention.exception.ClientException;
 import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.common.convention.result.Results;
-import com.moonike.admin.common.enums.UserErrorCodeEnum;
 import com.moonike.admin.dto.resp.UserRespDTO;
 import com.moonike.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +23,7 @@ public class UserController {
      */
     @GetMapping("/api/shortlink/v1/user/{username}")
     public Result<UserRespDTO> getUserByUsername (@PathVariable("username") String username) {
-        UserRespDTO result = userService.getUserByUsername(username);
-        if (result == null) {
-            throw new ClientException(UserErrorCodeEnum.USER_NULL);
-        } else {
-            return Results.success(result);
-        }
+        return Results.success(userService.getUserByUsername(username));
     }
 
 
