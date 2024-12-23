@@ -146,4 +146,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         return stringRedisTemplate.opsForHash().get(RedisCacheConstant.LOCK_USER_LOGIN_KEY + username, token) != null;
     }
 
+    @Override
+    public void logout(String username, String token) {
+        if (checkLogin(username, token)) {
+            stringRedisTemplate.delete(RedisCacheConstant.LOCK_USER_LOGIN_KEY + username);
+            return;
+        }
+        throw new ClientException(UserErrorCodeEnum.USER_LOGIN_STATE_ERROR);
+    }
+
 }
