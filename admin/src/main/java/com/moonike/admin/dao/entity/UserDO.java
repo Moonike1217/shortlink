@@ -1,15 +1,18 @@
 package com.moonike.admin.dao.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldFill;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
+/**
+ * 用户类实体
+ */
 @Data
 @TableName("t_user")
-public class UserDO {
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserDO extends BaseDO{
 
     /**
      * ID
@@ -45,22 +48,4 @@ public class UserDO {
      * 删除时间
      */
     private String deletionTime;
-
-    /**
-     * 创建时间
-     */
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
-
-    /**
-     * 更新时间
-     */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
-
-    /**
-     * 删除标识:0:未删除1:已删除
-     */
-    @TableField(fill = FieldFill.INSERT)
-    private Integer delFlag;
 }
