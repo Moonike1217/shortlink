@@ -125,4 +125,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         return new UserLoginRespDTO(uuid);
     }
 
+    @Override
+    public Boolean checkLogin(String token) {
+        return stringRedisTemplate.hasKey(RedisCacheConstant.LOCK_USER_LOGIN_KEY + token);
+    }
+
 }
