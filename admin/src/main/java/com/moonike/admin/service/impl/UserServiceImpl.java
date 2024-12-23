@@ -1,6 +1,8 @@
 package com.moonike.admin.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.lang.UUID;
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -10,8 +12,10 @@ import com.moonike.admin.common.convention.exception.ClientException;
 import com.moonike.admin.common.enums.UserErrorCodeEnum;
 import com.moonike.admin.dao.entity.UserDO;
 import com.moonike.admin.dao.mapper.UserMapper;
+import com.moonike.admin.dto.req.UserLoginReqDTO;
 import com.moonike.admin.dto.req.UserRegisterReqDTO;
 import com.moonike.admin.dto.req.UserUpdateReqDTO;
+import com.moonike.admin.dto.resp.UserLoginRespDTO;
 import com.moonike.admin.dto.resp.UserRespDTO;
 import com.moonike.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +23,10 @@ import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * 用户接口实现层
@@ -30,6 +37,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
 
     public final RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
     public final RedissonClient redissonClient;
+    public final StringRedisTemplate stringRedisTemplate;
 
     @Override
     public UserRespDTO getUserByUsername(String username) {
@@ -97,6 +105,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         LambdaUpdateWrapper<UserDO> updateWrapper = Wrappers.lambdaUpdate(UserDO.class)
                 .eq(UserDO::getUsername, requestParam.getUsername());
         baseMapper.update(BeanUtil.copyProperties(requestParam, UserDO.class), updateWrapper);
+    }
+
+    @Override
+    public UserLoginRespDTO login(UserLoginReqDTO requestParam) {
+        // 尝试从数据库中查询登录用户信息
+        LambdaUpdateWrapper<UserDO> queryWrapper = Wrappers.lambdaUpdate(UserDO.class)
+                .eq(UserDO::getUsername, requestParam.getUsername())
+                .eq(UserDO::getPassword, requestParam.getPassword())
+                .eq(UserDO::getDelFlag, 0);
+        UserDO user = baseMapper.selectOne(queryWrapper);
+        if (user == null) {
+            // 查询不到用户 登录信息有误
+            throw new ClientException(UserErrorCodeEnum.USER_LOGIN_ERROR);
+        }
+        //  登录信息校验成功 发放token
+        String uuid = UUID.randomUUID().toString();
+        stringRedisTemplate.opsForValue().set(RedisCacheConstant.LOCK_USER_LOGIN_KEY + uuid, JSON.toJSONString(user), 30, TimeUnit.MINUTES);
+        return new UserLoginRespDTO(uuid);
     }
 
 }

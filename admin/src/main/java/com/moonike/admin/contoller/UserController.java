@@ -2,8 +2,10 @@ package com.moonike.admin.contoller;
 
 import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.common.convention.result.Results;
+import com.moonike.admin.dto.req.UserLoginReqDTO;
 import com.moonike.admin.dto.req.UserRegisterReqDTO;
 import com.moonike.admin.dto.req.UserUpdateReqDTO;
+import com.moonike.admin.dto.resp.UserLoginRespDTO;
 import com.moonike.admin.dto.resp.UserRespDTO;
 import com.moonike.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -56,5 +58,16 @@ public class UserController {
     public Result<Void> update(@RequestBody UserUpdateReqDTO requestParam) {
         userService.update(requestParam);
         return Results.success();
+    }
+
+    /**
+     * 用户登录
+     * @param requestParam
+     * @return
+     */
+    @PostMapping("/api/shortlink/v1/user/login")
+    public Result<UserLoginRespDTO> login(@RequestBody UserLoginReqDTO requestParam) {
+        UserLoginRespDTO result = userService.login(requestParam);
+        return Results.success(result);
     }
 }
