@@ -119,15 +119,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
             // 查询不到用户 登录信息有误
             throw new ClientException(UserErrorCodeEnum.USER_LOGIN_ERROR);
         }
-        //  登录信息校验成功 发放token
+        Boolean hasLogin = stringRedisTemplate.hasKey(RedisCacheConstant.LOCK_USER_LOGIN_KEY + requestParam.getUsername());
+        if (hasLogin != null && hasLogin) {
+            // 用户信息无误 但用户已登录 抛出异常
+            throw new ClientException(UserErrorCodeEnum.USER_HAS_LOGIN);
+        }
+        //  登录信息校验成功 将用户信息存储到Redis中
+        /**
+         * 在 Redis 中采用 Hash 进行存储
+         * Key:RedisCacheConstant.LOCK_USER_LOGIN_KEY + username
+         * Value:
+         *   Key:"token"
+         *   Value:JSON.toJSONString(UserDO)
+         */
+        // 封装用户信息 存入Redis
+        String key = RedisCacheConstant.LOCK_USER_LOGIN_KEY + requestParam.getUsername();
         String uuid = UUID.randomUUID().toString();
-        stringRedisTemplate.opsForValue().set(RedisCacheConstant.LOCK_USER_LOGIN_KEY + uuid, JSON.toJSONString(user), 30, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForHash().put(key, uuid, JSON.toJSONString(user));
+        // 设置过期时间
+        stringRedisTemplate.expire(key, 30, TimeUnit.MINUTES);
         return new UserLoginRespDTO(uuid);
     }
 
     @Override
-    public Boolean checkLogin(String token) {
-        return stringRedisTemplate.hasKey(RedisCacheConstant.LOCK_USER_LOGIN_KEY + token);
+    public Boolean checkLogin(String username, String token) {
+        return stringRedisTemplate.opsForHash().get(RedisCacheConstant.LOCK_USER_LOGIN_KEY + username, token) != null;
     }
 
 }
