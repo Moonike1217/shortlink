@@ -3,6 +3,7 @@ package com.moonike.admin.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.moonike.admin.dao.entity.UserDO;
 import com.moonike.admin.dto.req.UserRegisterReqDTO;
+import com.moonike.admin.dto.req.UserUpdateReqDTO;
 import com.moonike.admin.dto.resp.UserRespDTO;
 
 /**
@@ -29,4 +30,10 @@ public interface UserService extends IService<UserDO> {
      * @param requestParam 用户注册请求参数
      */
     void register(UserRegisterReqDTO requestParam);
+
+    /**
+     * 更新用户个人信息
+     * @param requestParam
+     */
+    void update(UserUpdateReqDTO requestParam);
 }

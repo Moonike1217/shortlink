@@ -2,6 +2,7 @@ package com.moonike.admin.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.moonike.admin.common.constants.RedisCacheConstant;
@@ -10,6 +11,7 @@ import com.moonike.admin.common.enums.UserErrorCodeEnum;
 import com.moonike.admin.dao.entity.UserDO;
 import com.moonike.admin.dao.mapper.UserMapper;
 import com.moonike.admin.dto.req.UserRegisterReqDTO;
+import com.moonike.admin.dto.req.UserUpdateReqDTO;
 import com.moonike.admin.dto.resp.UserRespDTO;
 import com.moonike.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -87,6 +89,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
             // try-catch-finally 保证释放锁
             lock.unlock();
         }
+    }
+
+    @Override
+    public void update(UserUpdateReqDTO requestParam) {
+        //TODO 判断当前登录用户是否为目标修改用户
+        LambdaUpdateWrapper<UserDO> updateWrapper = Wrappers.lambdaUpdate(UserDO.class)
+                .eq(UserDO::getUsername, requestParam.getUsername());
+        baseMapper.update(BeanUtil.copyProperties(requestParam, UserDO.class), updateWrapper);
     }
 
 }
