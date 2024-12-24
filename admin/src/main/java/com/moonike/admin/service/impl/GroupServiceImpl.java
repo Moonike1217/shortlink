@@ -70,4 +70,20 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
             throw new ServiceException("修改短链接分组失败");
         }
     }
+
+    @Override
+    public void deleteGroup(String gid) {
+        /*
+            删除一般使用软删除来实现，即 将 del_flag 字段设置为 1
+         */
+        LambdaUpdateWrapper<GroupDO> updateWrapper = Wrappers.lambdaUpdate(GroupDO.class)
+                .eq(GroupDO::getGid, gid)
+                .eq(GroupDO::getUsername, UserContext.getUsername())
+                .eq(GroupDO::getDelFlag, 0)
+                .set(GroupDO::getDelFlag, 1);
+        int deleted = baseMapper.update(null, updateWrapper);
+        if (deleted < 1) {
+            throw new ServiceException("删除短链接分组失败");
+        }
+    }
 }
