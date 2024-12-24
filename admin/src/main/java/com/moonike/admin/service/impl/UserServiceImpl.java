@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.moonike.admin.common.biz.user.UserContext;
+import com.moonike.admin.common.biz.user.UserInfoDTO;
 import com.moonike.admin.common.constants.RedisCacheConstant;
 import com.moonike.admin.common.convention.exception.ClientException;
 import com.moonike.admin.common.enums.UserErrorCodeEnum;
@@ -124,12 +126,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
             // 用户信息无误 但用户已登录 抛出异常
             throw new ClientException(UserErrorCodeEnum.USER_HAS_LOGIN);
         }
-        //  登录信息校验成功 将用户信息存储到Redis中
-        /**
+        /*
+         * 登录信息校验成功 将用户信息存储到Redis中
          * 在 Redis 中采用 Hash 进行存储
          * Key:RedisCacheConstant.LOCK_USER_LOGIN_KEY + username
          * Value:
-         *   Key:"token"
+         *   Key:uuid
          *   Value:JSON.toJSONString(UserDO)
          */
         // 封装用户信息 存入Redis
@@ -138,6 +140,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         stringRedisTemplate.opsForHash().put(key, uuid, JSON.toJSONString(user));
         // 设置过期时间 设置为30天 方便后续开发
         stringRedisTemplate.expire(key, 30, TimeUnit.DAYS);
+        // 将用户信息保存到上下文
+        UserInfoDTO userInfoDTO = BeanUtil.copyProperties(user, UserInfoDTO.class);
+        UserContext.setUser(userInfoDTO);
         return new UserLoginRespDTO(uuid);
     }
 
