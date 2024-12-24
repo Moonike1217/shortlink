@@ -3,6 +3,7 @@ package com.moonike.admin.contoller;
 import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.common.convention.result.Results;
 import com.moonike.admin.dto.req.ShortlinkGroupSaveReqDTO;
+import com.moonike.admin.dto.req.ShortlinkGroupSortReqDTO;
 import com.moonike.admin.dto.req.ShortlinkGroupUpdateReqDTO;
 import com.moonike.admin.dto.resp.ShortlinkGroupRespDTO;
 import com.moonike.admin.service.GroupService;
@@ -51,9 +52,20 @@ public class GroupController {
         return Results.success();
     }
 
+    /**
+     * 删除短链接分组
+     * @param gid 短链接分组唯一标识
+     * @return
+     */
     @DeleteMapping("/api/shortlink/v1/group")
     public Result<Void> deleteGroup(@RequestParam String gid) {
         groupService.deleteGroup(gid);
+        return Results.success();
+    }
+
+    @PostMapping("/api/shortlink/v1/group/sort")
+    public Result<Void> sortGroup(@RequestBody List<ShortlinkGroupSortReqDTO> requestParam) {
+        groupService.sortGroup(requestParam);
         return Results.success();
     }
 

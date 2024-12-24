@@ -10,12 +10,14 @@ import com.moonike.admin.common.biz.user.UserContext;
 import com.moonike.admin.common.convention.exception.ServiceException;
 import com.moonike.admin.dao.entity.GroupDO;
 import com.moonike.admin.dao.mapper.GroupMapper;
+import com.moonike.admin.dto.req.ShortlinkGroupSortReqDTO;
 import com.moonike.admin.dto.req.ShortlinkGroupUpdateReqDTO;
 import com.moonike.admin.dto.resp.ShortlinkGroupRespDTO;
 import com.moonike.admin.service.GroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -64,6 +66,7 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
                 .eq(GroupDO::getGid, requestParam.getGid())
                 .eq(GroupDO::getUsername, UserContext.getUsername())
                 .eq(GroupDO::getDelFlag, 0)
+                .set(GroupDO::getUpdateTime, LocalDateTime.now())
                 .set(GroupDO::getName, requestParam.getName());
         int updated = baseMapper.update(null, updateWrapper);
         if (updated < 1) {
@@ -80,10 +83,24 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
                 .eq(GroupDO::getGid, gid)
                 .eq(GroupDO::getUsername, UserContext.getUsername())
                 .eq(GroupDO::getDelFlag, 0)
+                .set(GroupDO::getUpdateTime, LocalDateTime.now())
                 .set(GroupDO::getDelFlag, 1);
         int deleted = baseMapper.update(null, updateWrapper);
         if (deleted < 1) {
             throw new ServiceException("删除短链接分组失败");
         }
+    }
+
+    @Override
+    public void sortGroup(List<ShortlinkGroupSortReqDTO> requestParam) {
+        requestParam.forEach(item -> {
+            LambdaUpdateWrapper<GroupDO> updateWrapper = Wrappers.lambdaUpdate(GroupDO.class)
+                    .eq(GroupDO::getGid, item.getGid())
+                    .eq(GroupDO::getUsername, UserContext.getUsername())
+                    .eq(GroupDO::getDelFlag, 0)
+                    .set(GroupDO::getUpdateTime, LocalDateTime.now())
+                    .set(GroupDO::getSortOrder, item.getSortOrder());
+                    baseMapper.update(null, updateWrapper);
+        });
     }
 }

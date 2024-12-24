@@ -2,6 +2,7 @@ package com.moonike.admin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.moonike.admin.dao.entity.GroupDO;
+import com.moonike.admin.dto.req.ShortlinkGroupSortReqDTO;
 import com.moonike.admin.dto.req.ShortlinkGroupUpdateReqDTO;
 import com.moonike.admin.dto.resp.ShortlinkGroupRespDTO;
 
@@ -33,7 +34,7 @@ public interface GroupService extends IService<GroupDO> {
 
     /**
      * 修改短链接分组
-     * @param requestParam 短链接分组封装参数
+     * @param requestParam ShortlinkGroupUpdateReqDTO
      */
     void updateGroup(ShortlinkGroupUpdateReqDTO requestParam);
 
@@ -42,4 +43,10 @@ public interface GroupService extends IService<GroupDO> {
      * @param gid 短链接分组标识
      */
     void deleteGroup(String gid);
+
+    /**
+     * 短链接分组排序
+     * @param requestParam List<ShortlinkGroupSortReqDTO>
+     */
+    void sortGroup(List<ShortlinkGroupSortReqDTO> requestParam);
 }
