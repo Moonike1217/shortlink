@@ -2,6 +2,7 @@ package com.moonike.admin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.moonike.admin.dao.entity.GroupDO;
+import com.moonike.admin.dto.req.ShortlinkGroupUpdateReqDTO;
 import com.moonike.admin.dto.resp.ShortlinkGroupRespDTO;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public interface GroupService extends IService<GroupDO> {
 
     /**
      * 判断gid是否已经存在
-     * @param gid
+     * @param gid 分组标识
      * @return true:存在 false:不存在
      */
     Boolean hasGid(String gid);
@@ -29,4 +30,10 @@ public interface GroupService extends IService<GroupDO> {
      * @return 所有短链接分组集合
      */
     List<ShortlinkGroupRespDTO> listGroup();
+
+    /**
+     * 修改短链接分组
+     * @param requestParam 短链接分组封装参数
+     */
+    void updateGroup(ShortlinkGroupUpdateReqDTO requestParam);
 }
