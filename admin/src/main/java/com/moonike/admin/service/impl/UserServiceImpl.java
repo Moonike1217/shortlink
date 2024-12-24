@@ -136,8 +136,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         String key = RedisCacheConstant.LOCK_USER_LOGIN_KEY + requestParam.getUsername();
         String uuid = UUID.randomUUID().toString();
         stringRedisTemplate.opsForHash().put(key, uuid, JSON.toJSONString(user));
-        // 设置过期时间
-        stringRedisTemplate.expire(key, 30, TimeUnit.MINUTES);
+        // 设置过期时间 设置为30天 方便后续开发
+        stringRedisTemplate.expire(key, 30, TimeUnit.DAYS);
         return new UserLoginRespDTO(uuid);
     }
 
