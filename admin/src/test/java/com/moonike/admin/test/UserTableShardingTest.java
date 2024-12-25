@@ -17,8 +17,9 @@ public class UserTableShardingTest {
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
     public static void main(String[] args) {
-        for (int i = 0; i < 16; i++) {
-            System.out.printf((SQL) + "%n", i);
-        }
+        System.out.println(4 % 3);
+        System.out.println(-4 % -3);
+        System.out.println(4 % -3);
+        System.out.println(-4 % 3);
     }
 }

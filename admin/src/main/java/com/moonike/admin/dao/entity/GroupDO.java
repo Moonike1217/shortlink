@@ -1,6 +1,7 @@
 package com.moonike.admin.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.moonike.admin.common.database.BaseDO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class GroupDO extends BaseDO{
+public class GroupDO extends BaseDO {
 
     /**
     * ID

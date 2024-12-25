@@ -1,4 +1,4 @@
-package com.moonike.admin.dao.entity;
+package com.moonike.admin.common.database;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.TableField;
