@@ -1,12 +1,17 @@
 package com.moonike.project.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.moonike.project.common.convention.exception.ServiceException;
 import com.moonike.project.dao.entity.ShortLinkDO;
 import com.moonike.project.dao.mapper.ShortLinkMapper;
 import com.moonike.project.dto.req.ShortLinkCreateReqDTO;
+import com.moonike.project.dto.req.ShortLinkPageReqDTO;
 import com.moonike.project.dto.resp.ShortLinkCreateRespDTO;
+import com.moonike.project.dto.resp.ShortLinkPageRespDTO;
 import com.moonike.project.service.ShortLinkService;
 import com.moonike.project.tookit.HashUtil;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +61,17 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 .originUrl(shortLinkDO.getOriginUrl())
                 .build();
     }
-    
+
+    @Override
+    public IPage<ShortLinkPageRespDTO> pageShortLink(ShortLinkPageReqDTO requestParam) {
+        LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
+                .eq(ShortLinkDO::getGid, requestParam.getGid())
+                .eq(ShortLinkDO::getDelFlag, 0)
+                .eq(ShortLinkDO::getEnableStatus, 0);
+        IPage<ShortLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
+        return resultPage.convert(item -> BeanUtil.toBean(item, ShortLinkPageRespDTO.class));
+    }
+
     public String generateSuffix(ShortLinkCreateReqDTO requestParam) {
         // 重试次数
         int customSuffixCount = 0;
