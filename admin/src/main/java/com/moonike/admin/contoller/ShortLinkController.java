@@ -2,7 +2,7 @@ package com.moonike.admin.contoller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.admin.common.convention.result.Result;
-import com.moonike.admin.remote.dto.ShortLinkRemoteService;
+import com.moonike.admin.remote.ShortLinkRemoteService;
 import com.moonike.admin.remote.dto.req.ShortLinkCreateReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkPageReqDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkCreateRespDTO;
@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ShortLinkController {
 
+    ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService() {};
+
     /**
      * 中台远程调用短链接创建服务
      * @param requestParam
@@ -25,7 +27,6 @@ public class ShortLinkController {
      */
     @PostMapping("/api/shortlink/admin/v1/create")
     public Result<ShortLinkCreateRespDTO> createShortLink(@RequestBody ShortLinkCreateReqDTO requestParam) {
-        ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService() {};
         return shortLinkRemoteService.createShortLink(requestParam);
     }
 
@@ -36,7 +37,6 @@ public class ShortLinkController {
      */
     @GetMapping("/api/shortlink/admin/v1/page")
     public Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkPageReqDTO requestParam) {
-        ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService() {};
         return shortLinkRemoteService.pageShortLink(requestParam);
     }
 

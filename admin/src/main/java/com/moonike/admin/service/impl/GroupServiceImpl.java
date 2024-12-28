@@ -13,12 +13,17 @@ import com.moonike.admin.dao.mapper.GroupMapper;
 import com.moonike.admin.dto.req.ShortlinkGroupSortReqDTO;
 import com.moonike.admin.dto.req.ShortlinkGroupUpdateReqDTO;
 import com.moonike.admin.dto.resp.ShortlinkGroupRespDTO;
+import com.moonike.admin.remote.ShortLinkRemoteService;
+import com.moonike.admin.remote.dto.resp.ShortLinkCountQueryRespDTO;
 import com.moonike.admin.service.GroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 短链接分组接口实现层
@@ -26,6 +31,9 @@ import java.util.List;
 @Service
 @Slf4j
 public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implements GroupService {
+
+    ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService() {};
+
     @Override
     public void saveGroup(String groupName) {
         String gid;
@@ -52,12 +60,32 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
 
     @Override
     public List<ShortlinkGroupRespDTO> listGroup() {
+        // 构建Wrappers
         LambdaQueryWrapper<GroupDO> queryWrapper = Wrappers.lambdaQuery(GroupDO.class)
                 .eq(GroupDO::getUsername, UserContext.getUsername())
                 .eq(GroupDO::getDelFlag, 0)
                 .orderByDesc(List.of(GroupDO::getSortOrder, GroupDO::getUpdateTime));
+        // 从数据库中查询分组数据（不含shortLinkCount）
         List<GroupDO> groupDOList = baseMapper.selectList(queryWrapper);
-        return BeanUtil.copyToList(groupDOList, ShortlinkGroupRespDTO.class);
+        if (groupDOList.isEmpty()) {return Collections.emptyList();}
+        // 提取gid列表
+        List<String> gidList = groupDOList.stream().map(GroupDO::getGid).toList();
+        // 远程调用 查询每个分组的短链接数量
+        List<ShortLinkCountQueryRespDTO> data = shortLinkRemoteService.listGroupShortLinkCount(gidList).getData();
+        // 构建Stream
+        Map<String, Integer> shortLinkCountMap = data.stream()
+                // 将Stream中的元素转换为Map
+                .collect(Collectors.toMap(
+                        ShortLinkCountQueryRespDTO::getGid,
+                        ShortLinkCountQueryRespDTO::getShortLinkCount)
+                );
+        // 将除了shortLinkCount外的数据先进行封装
+        List<ShortlinkGroupRespDTO> shortlinkGroupRespDTOList = BeanUtil.copyToList(groupDOList, ShortlinkGroupRespDTO.class);
+        // 封装shortLinkCount
+        shortlinkGroupRespDTOList.forEach(item ->
+                item.setShortLinkCount(shortLinkCountMap.getOrDefault(item.getGid(), 0))
+        );
+        return shortlinkGroupRespDTOList;
     }
 
     @Override

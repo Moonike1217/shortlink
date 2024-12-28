@@ -1,4 +1,4 @@
-package com.moonike.admin.remote.dto;
+package com.moonike.admin.remote;
 
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
@@ -7,10 +7,13 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.remote.dto.req.ShortLinkCreateReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkPageReqDTO;
+import com.moonike.admin.remote.dto.resp.ShortLinkCountQueryRespDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkCreateRespDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkPageRespDTO;
 import org.springframework.web.bind.annotation.RequestBody;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,5 +43,18 @@ public interface ShortLinkRemoteService {
     default Result<ShortLinkCreateRespDTO> createShortLink(ShortLinkCreateReqDTO requestParam) {
         String resultBodyStr = HttpUtil.post("http://127.0.0.1:8001/api/shortlink/v1/create", JSON.toJSONString(requestParam));
         return JSON.parseObject(resultBodyStr, new TypeReference<>() {});
+    }
+
+    /**
+     * 远程调用查询短链接分组内短链接数量
+     * @param requestParam
+     * @return
+     */
+    default Result<List<ShortLinkCountQueryRespDTO>> listGroupShortLinkCount(List<String> requestParam) {
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("requestParam", requestParam);
+        // 返回的JSON字符串
+        String resultPageStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/count", requestMap);
+        return JSON.parseObject(resultPageStr, new TypeReference<>() {});
     }
 }
