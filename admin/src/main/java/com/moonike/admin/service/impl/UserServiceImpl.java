@@ -19,6 +19,7 @@ import com.moonike.admin.dto.req.UserRegisterReqDTO;
 import com.moonike.admin.dto.req.UserUpdateReqDTO;
 import com.moonike.admin.dto.resp.UserLoginRespDTO;
 import com.moonike.admin.dto.resp.UserRespDTO;
+import com.moonike.admin.service.GroupService;
 import com.moonike.admin.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBloomFilter;
@@ -37,9 +38,10 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements UserService {
 
-    public final RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
-    public final RedissonClient redissonClient;
-    public final StringRedisTemplate stringRedisTemplate;
+    private final RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
+    private final RedissonClient redissonClient;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final GroupService groupService;
 
     @Override
     public UserRespDTO getUserByUsername(String username) {
@@ -90,6 +92,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
                 }
                 // 用户创建成功 将用户名添加到布隆过滤器维护的集合中
                 userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());
+                // 为新用户添加默认分组
+                groupService.saveGroup(requestParam.getUsername(), "默认分组");
                 // 创建完成 结束调用
             } else {
                 // 没拿到锁 说明有多个线程同时注册同一个用户名 直接抛出异常

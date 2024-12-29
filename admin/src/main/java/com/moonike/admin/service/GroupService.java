@@ -20,11 +20,25 @@ public interface GroupService extends IService<GroupDO> {
     void saveGroup(String groupName);
 
     /**
+     * 新增短链接分组
+     * @param username 用户名
+     * @param groupName 短链接分组名
+     */
+    void saveGroup(String username,String groupName);
+
+//    /**
+//     * 判断gid是否已经存在
+//     * @param gid 分组标识
+//     * @return true:存在 false:不存在
+//     */
+//    Boolean hasGid(String gid);
+
+    /**
      * 判断gid是否已经存在
      * @param gid 分组标识
      * @return true:存在 false:不存在
      */
-    Boolean hasGid(String gid);
+    Boolean hasGid(String username, String gid);
 
     /**
      * 查询所有短链接分组
