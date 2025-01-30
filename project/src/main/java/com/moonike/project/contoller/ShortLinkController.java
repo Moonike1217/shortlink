@@ -5,6 +5,7 @@ import com.moonike.project.common.convention.result.Result;
 import com.moonike.project.common.convention.result.Results;
 import com.moonike.project.dto.req.ShortLinkCreateReqDTO;
 import com.moonike.project.dto.req.ShortLinkPageReqDTO;
+import com.moonike.project.dto.req.ShortLinkUpdateReqDTO;
 import com.moonike.project.dto.resp.ShortLinkCountQueryRespDTO;
 import com.moonike.project.dto.resp.ShortLinkCreateRespDTO;
 import com.moonike.project.dto.resp.ShortLinkPageRespDTO;
@@ -41,6 +42,7 @@ public class ShortLinkController {
         return Results.success(shortLinkService.pageShortLink(requestParam));
     }
 
+
     /**
      * 查询短链接分组下的短链接数量
      * @return
@@ -49,5 +51,17 @@ public class ShortLinkController {
     public Result<List<ShortLinkCountQueryRespDTO>> listGroupShortLinkCount(@RequestParam("requestParam") List<String> requestParam) {
         return Results.success(shortLinkService.listGroupShortLinkCount(requestParam));
     }
+
+    /**
+     * 修改短链接信息
+     * @param requestParam
+     * @return
+     */
+    @PostMapping("/api/shortlink/v1/update")
+    public Result<Void> updateShortLink(@RequestBody ShortLinkUpdateReqDTO requestParam) {
+        shortLinkService.updateShortLink(requestParam);
+        return Results.success();
+    }
+
 
 }

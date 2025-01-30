@@ -3,14 +3,18 @@ package com.moonike.project.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.moonike.project.common.convention.exception.ClientException;
 import com.moonike.project.common.convention.exception.ServiceException;
+import com.moonike.project.common.enums.ValidDateTypeEnum;
 import com.moonike.project.dao.entity.ShortLinkDO;
 import com.moonike.project.dao.mapper.ShortLinkMapper;
 import com.moonike.project.dto.req.ShortLinkCreateReqDTO;
 import com.moonike.project.dto.req.ShortLinkPageReqDTO;
+import com.moonike.project.dto.req.ShortLinkUpdateReqDTO;
 import com.moonike.project.dto.resp.ShortLinkCountQueryRespDTO;
 import com.moonike.project.dto.resp.ShortLinkCreateRespDTO;
 import com.moonike.project.dto.resp.ShortLinkPageRespDTO;
@@ -21,9 +25,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -80,7 +86,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
 
     @Override
     public List<ShortLinkCountQueryRespDTO> listGroupShortLinkCount(List<String> requestParam) {
-        QueryWrapper<ShortLinkDO> queryWrapper = Wrappers.query(new ShortLinkDO())
+        QueryWrapper<ShortLinkDO> queryWrapper = Wrappers.<ShortLinkDO>query()
                 .select("gid as gid, count(*) as shortLinkCount")
                 .in("gid", requestParam)
                 .eq("enable_status", 0)
@@ -89,6 +95,60 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         List<Map<String, Object>> shortLinkDOList = baseMapper.selectMaps(queryWrapper);
         return BeanUtil.copyToList(shortLinkDOList, ShortLinkCountQueryRespDTO.class);
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void updateShortLink(ShortLinkUpdateReqDTO requestParam) {
+        // 根据DTO中的originGid字段 查询数据库中是否存在该短链接记录
+        LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
+                .eq(ShortLinkDO::getGid, requestParam.getOriginGid())
+                .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+                .eq(ShortLinkDO::getDelFlag, 0)
+                .eq(ShortLinkDO::getEnableStatus, 0);
+        ShortLinkDO hasShortLinkDO = baseMapper.selectOne(queryWrapper);
+        if (hasShortLinkDO == null) {
+            // 数据库中不存在该记录
+            throw new ClientException("短链接记录不存在");
+        }
+
+        // 构造修改结果
+        ShortLinkDO shortLinkDO = ShortLinkDO.builder()
+                .domain(hasShortLinkDO.getDomain())
+                .shortUri(hasShortLinkDO.getShortUri())
+                .favicon(hasShortLinkDO.getFavicon())
+                .createdType(hasShortLinkDO.getCreatedType())
+                .gid(requestParam.getGid())
+                .originUrl(requestParam.getOriginUrl())
+                .describe(requestParam.getDescribe())
+                .validDateType(requestParam.getValidDateType())
+                .validDate(requestParam.getValidDate())
+                .build();
+
+        // 数据库中存在该记录
+        // 判断gid是否进行了修改 如果进行了修改 则需要删除并重新生成记录
+        if (Objects.equals(hasShortLinkDO.getGid(), requestParam.getGid())) {
+            // gid未修改 可对原记录进行修改
+            // 构造修改条件
+            LambdaUpdateWrapper<ShortLinkDO> updateWrapper = Wrappers.lambdaUpdate(ShortLinkDO.class)
+                    .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+                    .eq(ShortLinkDO::getGid, requestParam.getGid())
+                    .eq(ShortLinkDO::getDelFlag, 0)
+                    .eq(ShortLinkDO::getEnableStatus, 0)
+                    .set(Objects.equals(requestParam.getValidDateType(), ValidDateTypeEnum.PERMANENT.getType()), ShortLinkDO::getValidDate, null);
+            // 修改记录
+            baseMapper.update(shortLinkDO, updateWrapper);
+        } else {
+            // gid进行了修改 需要先根据originGid删除原记录 再新建记录
+            LambdaUpdateWrapper<ShortLinkDO> updateWrapper = Wrappers.lambdaUpdate(ShortLinkDO.class)
+                    .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+                    .eq(ShortLinkDO::getGid, requestParam.getOriginGid())
+                    .eq(ShortLinkDO::getDelFlag, 0)
+                    .eq(ShortLinkDO::getEnableStatus, 0);
+            baseMapper.delete(updateWrapper);
+            baseMapper.insert(shortLinkDO);
+        }
+    }
+
 
     public String generateSuffix(ShortLinkCreateReqDTO requestParam) {
         // 重试次数
