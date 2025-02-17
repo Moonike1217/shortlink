@@ -3,8 +3,10 @@ package com.moonike.project.dao.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.moonike.project.common.database.BaseDO;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +15,8 @@ import java.time.LocalDateTime;
  */
 @TableName("t_link")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ShortLinkDO extends BaseDO {
 
