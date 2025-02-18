@@ -23,6 +23,7 @@ import com.moonike.project.dto.resp.ShortLinkCreateRespDTO;
 import com.moonike.project.dto.resp.ShortLinkPageRespDTO;
 import com.moonike.project.service.ShortLinkService;
 import com.moonike.project.tookit.HashUtil;
+import com.moonike.project.tookit.LinkUtil;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static com.moonike.project.common.constant.RedisKeyConstant.*;
 
@@ -91,6 +93,14 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         }
         // 将完整链接添加到布隆过滤器
         shortUriCreateCachePenetrationBloomFilter.add(fullShortUrl);
+        //缓存预热，防止缓存雪崩
+        stringRedisTemplate.opsForValue().set(
+                StrUtil.format(GOTO_SHORT_LINK_KEY, fullShortUrl),
+                requestParam.getOriginUrl(),
+                //设置key的过期时间
+                LinkUtil.getShortLinkCacheTime(requestParam.getValidDate()),
+                TimeUnit.MILLISECONDS
+        );
         // 返回创建成功的短链接对象
         return ShortLinkCreateRespDTO.builder()
                 .gid(shortLinkDO.getGid())
