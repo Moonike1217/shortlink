@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * 短链接控制层
+ * 业务中台-短链接控制层
  */
 @RestController
 @RequiredArgsConstructor
@@ -29,6 +29,8 @@ public class ShortLinkController {
 
     /**
      * 创建短链接
+     * @param requestParam
+     * @return
      */
     @PostMapping("/api/shortlink/v1/create")
     public Result<ShortLinkCreateRespDTO> createShortLink(@RequestBody ShortLinkCreateReqDTO requestParam) {
@@ -45,9 +47,9 @@ public class ShortLinkController {
         return Results.success(shortLinkService.pageShortLink(requestParam));
     }
 
-
     /**
-     * 查询短链接分组下的短链接数量
+     * 统计分组下短链接数量
+     * @param requestParam
      * @return
      */
     @GetMapping("/api/shortlink/v1/count")
@@ -73,6 +75,4 @@ public class ShortLinkController {
     public void restoreUrl(@PathVariable("short-uri") String shortUri, ServletRequest request, ServletResponse response) throws IOException {
         shortLinkService.restoreUrl(shortUri, request, response);
     }
-
-
 }

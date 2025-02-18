@@ -13,15 +13,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 短链接分组接口控制层
+ * 后管-短链接分组控制层
  */
 @RestController
 @RequiredArgsConstructor
 public class GroupController {
+
     private final GroupService groupService;
 
     /**
-     * 新建短链接分组
+     * 中台远程调用 新建短链接分组
      * @param requestParam
      * @return
      */
@@ -32,7 +33,7 @@ public class GroupController {
     }
 
     /**
-     * 查询短链接分组
+     * 中台远程调用 查询短链接分组
      * @return
      */
     @GetMapping("/api/shortlink/admin/v1/group")
@@ -42,7 +43,7 @@ public class GroupController {
     }
 
     /**
-     * 修改短链接分组
+     * 中台远程调用 修改短链接分组
      * @param requestParam
      * @return
      */
@@ -53,7 +54,7 @@ public class GroupController {
     }
 
     /**
-     * 删除短链接分组
+     * 中台远程调用 删除短链接分组
      * @param gid 短链接分组唯一标识
      * @return
      */
@@ -64,7 +65,7 @@ public class GroupController {
     }
 
     /**
-     * 短链接分组排序
+     * 中台远程调用 短链接分组排序
      * @param requestParam
      * @return
      */
@@ -73,5 +74,4 @@ public class GroupController {
         groupService.sortGroup(requestParam);
         return Results.success();
     }
-
 }

@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 用户管理控制层
+ * 后管-用户管理控制层
  */
 @RestController
 @RequiredArgsConstructor
@@ -73,8 +73,8 @@ public class UserController {
 
     /**
      * 检测用户是否登录
-     * @param username
-     * @param token
+     * @param username 用户名
+     * @param token 令牌
      * @return
      */
     @GetMapping("/api/shortlink/admin/v1/user/check-login")
@@ -85,8 +85,8 @@ public class UserController {
 
     /**
      * 用户退出登录
-     * @param username
-     * @param token
+     * @param username 用户名
+     * @param token 令牌
      * @return
      */
     @DeleteMapping("/api/shortlink/admin/v1/user/logout")

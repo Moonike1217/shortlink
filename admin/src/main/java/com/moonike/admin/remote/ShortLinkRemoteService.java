@@ -32,8 +32,8 @@ public interface ShortLinkRemoteService {
         requestMap.put("current", requestParam.getCurrent());
         requestMap.put("size", requestParam.getSize());
         // 返回的JSON字符串
-        String resultPageStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/page", requestMap);
-        return JSON.parseObject(resultPageStr, new TypeReference<>() {});
+        String resultStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/page", requestMap);
+        return JSON.parseObject(resultStr, new TypeReference<>() {});
     }
 
     /**
@@ -42,8 +42,8 @@ public interface ShortLinkRemoteService {
      * @return
      */
     default Result<ShortLinkCreateRespDTO> createShortLink(ShortLinkCreateReqDTO requestParam) {
-        String resultBodyStr = HttpUtil.post("http://127.0.0.1:8001/api/shortlink/v1/create", JSON.toJSONString(requestParam));
-        return JSON.parseObject(resultBodyStr, new TypeReference<>() {});
+        String resultStr = HttpUtil.post("http://127.0.0.1:8001/api/shortlink/v1/create", JSON.toJSONString(requestParam));
+        return JSON.parseObject(resultStr, new TypeReference<>() {});
     }
 
     /**
@@ -55,8 +55,8 @@ public interface ShortLinkRemoteService {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("requestParam", requestParam);
         // 返回的JSON字符串
-        String resultPageStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/count", requestMap);
-        return JSON.parseObject(resultPageStr, new TypeReference<>() {});
+        String resultStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/count", requestMap);
+        return JSON.parseObject(resultStr, new TypeReference<>() {});
     }
 
     /**
@@ -68,12 +68,12 @@ public interface ShortLinkRemoteService {
     }
 
     /**
-     * 根据 URL 获取标题
+     * 远程调用根据 URL 获取标题
      * @param url 目标网站地址
      * @return 网站标题
      */
     default Result<String> getTitleByUrl(String url) {
-        String resultStr = HttpUtil.get("http://127.0.0.1:8001/api/short-link/v1/title?url=" + url);
+        String resultStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/title?url=" + url);
         return JSON.parseObject(resultStr, new TypeReference<>() {});
     }
 }

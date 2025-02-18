@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 短链接后管管理控制层
+ * 后管-短链接控制层
  */
 @RestController
 public class ShortLinkController {
@@ -23,7 +23,7 @@ public class ShortLinkController {
     ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService() {};
 
     /**
-     * 中台远程调用短链接创建服务
+     * 中台远程调用 短链接创建服务
      * @param requestParam
      * @return
      */
@@ -33,7 +33,7 @@ public class ShortLinkController {
     }
 
     /**
-     * 中台远程调用短链接分页查询服务
+     * 中台远程调用 短链接分页查询服务
      * @param requestParam
      * @return
      */
@@ -43,7 +43,7 @@ public class ShortLinkController {
     }
 
     /**
-     * 中台远程调用修改短链接信息服务
+     * 中台远程调用 修改短链接服务
      * @param requestParam
      * @return
      */

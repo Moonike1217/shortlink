@@ -8,11 +8,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 业务中台-网站标题获取控制器
+ */
 @RestController
 @RequiredArgsConstructor
-/**
- * 网站标题获取控制器
- */
 public class UrlTitleController {
 
     private final UrlTitleService urlTitleService;
@@ -20,7 +20,7 @@ public class UrlTitleController {
     /**
      * 根据 URL 获取对应网站的标题
      */
-    @GetMapping("/api/short-link/v1/title")
+    @GetMapping("/api/shortlink/v1/title")
     public Result<String> getTitleByUrl(@RequestParam("url") String url) {
         return Results.success(urlTitleService.getTitleByUrl(url));
     }

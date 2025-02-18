@@ -4,7 +4,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
- * 短链接不存在跳转控制器
+ * 业务中台-短链接不存在跳转控制器
  */
 @Controller
 public class ShortLinkNotFoundController {
