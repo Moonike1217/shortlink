@@ -42,8 +42,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import static com.moonike.project.common.constant.RedisKeyConstant.GOTO_SHORT_LINK_KEY;
-import static com.moonike.project.common.constant.RedisKeyConstant.LOCK_GOTO_SHORT_LINK_KEY;
+import static com.moonike.project.common.constant.RedisKeyConstant.*;
 
 /**
  * 短链接接口实现层
@@ -190,7 +189,16 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             ((HttpServletResponse) response).sendRedirect(originalLink);
             return;
         }
-        // 不存在原链接，需要先获取redisson分布式锁保证线程安全，然后查询数据库
+        // 不存在原链接，为了防止缓存穿透，需要先查询布隆过滤器，然后查询Redis中是否缓存了对应key的空值
+        boolean contains = shortUriCreateCachePenetrationBloomFilter.contains(fullShortUrl);
+        if (!contains) {
+            return;
+        }
+        String s = stringRedisTemplate.opsForValue().get(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl));
+        if (StrUtil.isNotBlank(s)) {
+            return;
+        }
+        // 查询数据库，需要先获取redisson分布式锁保证线程安全
         RLock lock = redissonClient.getLock(String.format(LOCK_GOTO_SHORT_LINK_KEY, fullShortUrl));
         lock.lock();
         try {
@@ -206,6 +214,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                             .eq(ShortLinkGotoDO::getFullShortUrl, fullShortUrl)
             );
             if (shortLinkGotoDO == null) {
+                stringRedisTemplate.opsForValue().set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-");
                 return;
             }
             // 构造查询条件
