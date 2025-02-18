@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.admin.common.convention.result.Result;
+import com.moonike.admin.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.admin.dto.req.ShortLinkUpdateReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkCreateReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkPageReqDTO;
@@ -75,5 +76,13 @@ public interface ShortLinkRemoteService {
     default Result<String> getTitleByUrl(String url) {
         String resultStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/title?url=" + url);
         return JSON.parseObject(resultStr, new TypeReference<>() {});
+    }
+
+    /**
+     * 远程调用保存短链接到回收站
+     * @param requestParam
+     */
+    default void saveLinkToRecycleBin(SaveLinkToRecycleBinReqDTO requestParam) {
+        HttpUtil.post("http://127.0.0.1:8001/api/shortlink/v1/recycle-bin/", JSON.toJSONString(requestParam));
     }
 }
