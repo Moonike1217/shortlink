@@ -7,10 +7,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.admin.dto.req.ShortLinkUpdateReqDTO;
-import com.moonike.admin.remote.dto.req.RecoverLinkFromRecycleBinReqDTO;
-import com.moonike.admin.remote.dto.req.ShortLinkCreateReqDTO;
-import com.moonike.admin.remote.dto.req.ShortLinkPageRecycleBinReqDTO;
-import com.moonike.admin.remote.dto.req.ShortLinkPageReqDTO;
+import com.moonike.admin.remote.dto.req.*;
 import com.moonike.admin.remote.dto.resp.ShortLinkCountQueryRespDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkCreateRespDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkPageRespDTO;
@@ -109,4 +106,12 @@ public interface ShortLinkRemoteService {
     default void recoverLinkFromRecycleBin(RecoverLinkFromRecycleBinReqDTO requestParam) {
         HttpUtil.post("http://127.0.0.1:8001/api/shortlink/v1/recycle-bin/recover", JSON.toJSONString(requestParam));
     }
-}
+
+    /**
+     * 远程调用从回收站删除短链接
+     * @param requestParam
+     */
+    default void removeLinkFromRecycleBin(RemoveLinkFromRecycleBinReqDTO requestParam) {
+        HttpUtil.post("http://127.0.0.1:8001/api/shortlink/v1/recycle-bin/delete", JSON.toJSONString(requestParam));
+    }
+    }

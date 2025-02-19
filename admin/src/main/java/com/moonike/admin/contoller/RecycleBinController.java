@@ -6,6 +6,7 @@ import com.moonike.admin.common.convention.result.Results;
 import com.moonike.admin.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.admin.remote.ShortLinkRemoteService;
 import com.moonike.admin.remote.dto.req.RecoverLinkFromRecycleBinReqDTO;
+import com.moonike.admin.remote.dto.req.RemoveLinkFromRecycleBinReqDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkPageRespDTO;
 import com.moonike.admin.service.RecycleBinService;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,17 @@ public class RecycleBinController {
     @PostMapping("/api/shortlink/admin/v1/recycle-bin/recover")
     public Result<Void> recoverLinkFromRecycleBin(@RequestBody RecoverLinkFromRecycleBinReqDTO requestParam) {
         shortLinkRemoteService.recoverLinkFromRecycleBin(requestParam);
+        return Results.success();
+    }
+
+    /**
+     * 中台远程调用 从回收站删除短链接
+     * @param requestParam
+     * @return
+     */
+    @PostMapping("/api/shortlink/admin/v1/recycle-bin/delete")
+    public Result<Void> deleteLinkFromRecycleBin(@RequestBody RemoveLinkFromRecycleBinReqDTO requestParam) {
+        shortLinkRemoteService.removeLinkFromRecycleBin(requestParam);
         return Results.success();
     }
 

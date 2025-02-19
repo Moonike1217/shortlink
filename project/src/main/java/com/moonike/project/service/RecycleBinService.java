@@ -3,6 +3,7 @@ package com.moonike.project.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.moonike.project.dao.entity.ShortLinkDO;
+import com.moonike.project.dto.req.RemoveLinkFromRecycleBinReqDTO;
 import com.moonike.project.dto.req.RecoverLinkFromRecycleBinReqDTO;
 import com.moonike.project.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.project.dto.req.ShortLinkPageRecycleBinReqDTO;
@@ -31,4 +32,10 @@ public interface RecycleBinService extends IService<ShortLinkDO> {
      * @param requestParam 恢复短链接请求参数
      */
     void recoverLinkFromRecycleBin(RecoverLinkFromRecycleBinReqDTO requestParam);
+
+    /**
+     * 从回收站删除短链接
+     * @param requestParam
+     */
+    void removeLinkFromRecycleBin(RemoveLinkFromRecycleBinReqDTO requestParam);
 }
