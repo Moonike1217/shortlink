@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.moonike.project.dao.entity.ShortLinkDO;
 import com.moonike.project.dao.mapper.ShortLinkMapper;
+import com.moonike.project.dto.req.RecoverLinkFromRecycleBinReqDTO;
 import com.moonike.project.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.project.dto.req.ShortLinkPageRecycleBinReqDTO;
 import com.moonike.project.dto.resp.ShortLinkPageRespDTO;
@@ -15,6 +16,7 @@ import com.moonike.project.service.RecycleBinService;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import static com.moonike.project.common.constant.RedisKeyConstant.GOTO_IS_NULL_SHORT_LINK_KEY;
 import static com.moonike.project.common.constant.RedisKeyConstant.GOTO_SHORT_LINK_KEY;
 
 /**
@@ -55,5 +57,21 @@ public class RecycleBinServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLin
                 .eq(ShortLinkDO::getEnableStatus, 1);
         IPage<ShortLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
         return resultPage.convert(item -> BeanUtil.toBean(item, ShortLinkPageRespDTO.class));
+    }
+
+    /**
+     * 将短链接从回收站移出
+     * @param requestParam 恢复短链接请求参数
+     */
+    @Override
+    public void recoverLinkFromRecycleBin(RecoverLinkFromRecycleBinReqDTO requestParam) {
+        LambdaUpdateWrapper<ShortLinkDO> updateWrapper = Wrappers.lambdaUpdate(ShortLinkDO.class)
+                .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+                .eq(ShortLinkDO::getGid, requestParam.getGid())
+                .eq(ShortLinkDO::getEnableStatus, 1)
+                .eq(ShortLinkDO::getDelFlag, 0)
+                .set(ShortLinkDO::getEnableStatus, 0);
+        baseMapper.update(null, updateWrapper);
+        stringRedisTemplate.delete(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, requestParam.getFullShortUrl()));
     }
 }

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.admin.dto.req.ShortLinkUpdateReqDTO;
+import com.moonike.admin.remote.dto.req.RecoverLinkFromRecycleBinReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkCreateReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkPageRecycleBinReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkPageReqDTO;
@@ -99,5 +100,13 @@ public interface ShortLinkRemoteService {
         // 返回的JSON字符串
         String resultStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/recycle-bin/page", requestMap);
         return JSON.parseObject(resultStr, new TypeReference<>() {});
+    }
+
+    /**
+     * 远程调用从回收站恢复短链接
+     * @param requestParam
+     */
+    default void recoverLinkFromRecycleBin(RecoverLinkFromRecycleBinReqDTO requestParam) {
+        HttpUtil.post("http://127.0.0.1:8001/api/shortlink/v1/recycle-bin/recover", JSON.toJSONString(requestParam));
     }
 }

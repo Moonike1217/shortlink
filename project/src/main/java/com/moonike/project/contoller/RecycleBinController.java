@@ -3,6 +3,7 @@ package com.moonike.project.contoller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.project.common.convention.result.Result;
 import com.moonike.project.common.convention.result.Results;
+import com.moonike.project.dto.req.RecoverLinkFromRecycleBinReqDTO;
 import com.moonike.project.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.project.dto.req.ShortLinkPageRecycleBinReqDTO;
 import com.moonike.project.dto.resp.ShortLinkPageRespDTO;
@@ -41,5 +42,16 @@ public class RecycleBinController {
     @GetMapping("/api/shortlink/v1/recycle-bin/page")
     public Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkPageRecycleBinReqDTO requestParam) {
         return Results.success(recycleBinService.pageRecycleBinShortLink(requestParam));
+    }
+
+    /**
+     * 从回收站恢复短链接
+     * @param requestParam
+     * @return
+     */
+    @PostMapping("/api/shortlink/v1/recycle-bin/recover")
+    public Result<Void> recoverLinkFromRecycleBin(@RequestBody RecoverLinkFromRecycleBinReqDTO requestParam) {
+        recycleBinService.recoverLinkFromRecycleBin(requestParam);
+        return Results.success();
     }
 }
