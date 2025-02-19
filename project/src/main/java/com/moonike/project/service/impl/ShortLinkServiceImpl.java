@@ -66,7 +66,11 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
 
-    // 新建短链接
+    /**
+     * 创建短链接
+     * @param requestParam 创建短链接请求参数
+     * @return
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ShortLinkCreateRespDTO createShortLink(ShortLinkCreateReqDTO requestParam) {
@@ -114,7 +118,11 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 .build();
     }
 
-    // 分页查询短链接
+    /**
+     * 分页查询短链接
+     * @param requestParam 分页查询短链接请求参数
+     * @return
+     */
     @Override
     public IPage<ShortLinkPageRespDTO> pageShortLink(ShortLinkPageReqDTO requestParam) {
         LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
@@ -125,7 +133,11 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         return resultPage.convert(item -> BeanUtil.toBean(item, ShortLinkPageRespDTO.class));
     }
 
-    // 统计某一分组内短链接数量
+    /**
+     * 统计某一分组内短链接数量
+     * @param requestParam 查询短链接分组内短链接数量请求参数
+     * @return
+     */
     @Override
     public List<ShortLinkCountQueryRespDTO> listGroupShortLinkCount(List<String> requestParam) {
         QueryWrapper<ShortLinkDO> queryWrapper = Wrappers.<ShortLinkDO>query()
@@ -138,7 +150,10 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         return BeanUtil.copyToList(shortLinkDOList, ShortLinkCountQueryRespDTO.class);
     }
 
-    // 编辑短链接
+    /**
+     * 修改短链接信息
+     * @param requestParam 修改短链接信息请求参数
+     */
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void updateShortLink(ShortLinkUpdateReqDTO requestParam) {
@@ -192,6 +207,13 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         }
     }
 
+    /**
+     * 短链接跳转原链接
+     * @param shortUri 短链接后缀
+     * @param request HTTP请求
+     * @param response HTTP响应
+     * @throws IOException
+     */
     @Override
     public void restoreUrl(String shortUri, ServletRequest request, ServletResponse response) throws IOException {
         // 拼接fullShortUrl
@@ -265,7 +287,11 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         }
     }
 
-    // 生成短链接
+    /**
+     * 生成短链接后缀
+     * @param requestParam
+     * @return
+     */
     private String generateSuffix(ShortLinkCreateReqDTO requestParam) {
         // 重试次数
         int customSuffixCount = 0;
@@ -285,7 +311,11 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         throw new ServiceException("短链接生成失败，请稍后再试");
     }
 
-    // 获取网站favicon
+    /**
+     * 获取网站favicon
+     * @param url
+     * @return
+     */
     @SneakyThrows
     private String getFavicon(String url) {
         URL targetUrl = new URL(url);

@@ -8,11 +8,11 @@ import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.admin.dto.req.ShortLinkUpdateReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkCreateReqDTO;
+import com.moonike.admin.remote.dto.req.ShortLinkPageRecycleBinReqDTO;
 import com.moonike.admin.remote.dto.req.ShortLinkPageReqDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkCountQueryRespDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkCreateRespDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkPageRespDTO;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +27,7 @@ public interface ShortLinkRemoteService {
      * @param requestParam
      * @return
      */
-    default Result<IPage<ShortLinkPageRespDTO>> pageShortLink(@RequestBody ShortLinkPageReqDTO requestParam) {
+    default Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkPageReqDTO requestParam) {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("gid", requestParam.getGid());
         requestMap.put("current", requestParam.getCurrent());
@@ -84,5 +84,20 @@ public interface ShortLinkRemoteService {
      */
     default void saveLinkToRecycleBin(SaveLinkToRecycleBinReqDTO requestParam) {
         HttpUtil.post("http://127.0.0.1:8001/api/shortlink/v1/recycle-bin/", JSON.toJSONString(requestParam));
+    }
+
+    /**
+     * 远程调用分页查询回收站短链接
+     * @param requestParam
+     * @return
+     */
+    default Result<IPage<ShortLinkPageRespDTO>> pageRecycleBinShortLink(ShortLinkPageRecycleBinReqDTO requestParam) {
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("gidList", requestParam.getGidList());
+        requestMap.put("current", requestParam.getCurrent());
+        requestMap.put("size", requestParam.getSize());
+        // 返回的JSON字符串
+        String resultStr = HttpUtil.get("http://127.0.0.1:8001/api/shortlink/v1/recycle-bin/page", requestMap);
+        return JSON.parseObject(resultStr, new TypeReference<>() {});
     }
 }
