@@ -11,8 +11,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.moonike.project.common.convention.exception.ClientException;
 import com.moonike.project.common.convention.exception.ServiceException;
 import com.moonike.project.common.enums.ValidDateTypeEnum;
+import com.moonike.project.dao.entity.LinkAccessStatsDO;
 import com.moonike.project.dao.entity.ShortLinkDO;
 import com.moonike.project.dao.entity.ShortLinkGotoDO;
+import com.moonike.project.dao.mapper.LinkAccessStatsMapper;
 import com.moonike.project.dao.mapper.ShortLinkGotoMapper;
 import com.moonike.project.dao.mapper.ShortLinkMapper;
 import com.moonike.project.dto.req.ShortLinkCreateReqDTO;
@@ -65,6 +67,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     private final ShortLinkGotoMapper shortLinkGotoMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
+    private final LinkAccessStatsMapper linkAccessStatsMapper;
 
     /**
      * 创建短链接
@@ -223,6 +226,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         String originalLink  = stringRedisTemplate.opsForValue().get(String.format(GOTO_SHORT_LINK_KEY, fullShortUrl));
         if (StrUtil.isNotBlank(originalLink)) {
             // 存在原链接，直接重定向
+            shortLinkStats(fullShortUrl, null, request, response);
             ((HttpServletResponse) response).sendRedirect(originalLink);
             return;
         }
@@ -244,6 +248,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             // Double-Checked Lock 双重判定锁，防止多个请求达到数据库，保证只有第一个失效请求达到数据库，解决缓存击穿
             originalLink  = stringRedisTemplate.opsForValue().get(String.format(GOTO_SHORT_LINK_KEY, fullShortUrl));
             if (StrUtil.isNotBlank(originalLink)) {
+                shortLinkStats(fullShortUrl, null, request, response);
                 ((HttpServletResponse) response).sendRedirect(originalLink);
                 return;
             }
@@ -253,6 +258,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                             .eq(ShortLinkGotoDO::getFullShortUrl, fullShortUrl)
             );
             if (shortLinkGotoDO == null) {
+                // 在goto表里查不到对应的短链接 重定向到notfound页面
                 stringRedisTemplate.opsForValue().set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-");
                 ((HttpServletResponse) response).sendRedirect("/page/notfound");
                 return;
@@ -268,6 +274,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             if (shortLinkDO != null) {
                 // 查询结果不为空，首先判断查询结果是否过期
                 if (shortLinkDO.getValidDate() != null && shortLinkDO.getValidDate().isBefore(LocalDateTime.now())) {
+                    // 页面过期 重定向到Notfound页面
                     stringRedisTemplate.opsForValue().set(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl), "-");
                     ((HttpServletResponse) response).sendRedirect("/page/notfound");
                     return;
@@ -280,6 +287,9 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         LinkUtil.getShortLinkCacheTime(shortLinkDO.getValidDate()),
                         TimeUnit.MILLISECONDS
                 );
+                // 记录统计数据
+                shortLinkStats(fullShortUrl, shortLinkDO.getGid(), request, response);
+                // 重定向
                 ((HttpServletResponse) response).sendRedirect(shortLinkDO.getOriginUrl());
             }
         } finally {
@@ -332,4 +342,27 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         }
         return null;
     }
+
+    private void shortLinkStats(String fullShortUrl, String gid, ServletRequest request, ServletResponse response) {
+        if(gid == null) {
+            LambdaQueryWrapper<ShortLinkGotoDO> wrapper = Wrappers.lambdaQuery(ShortLinkGotoDO.class)
+                    .eq(ShortLinkGotoDO::getFullShortUrl, fullShortUrl);
+            ShortLinkGotoDO shortLinkGotoDO = shortLinkGotoMapper.selectOne(wrapper);
+            gid = shortLinkGotoDO.getGid();
+        }
+        int hour = LocalDateTime.now().getHour();
+        int weekValue = LocalDateTime.now().getDayOfWeek().getValue();
+        LinkAccessStatsDO linkAccessStatsD0 = LinkAccessStatsDO.builder()
+                .pv(1)
+                .uv(1)
+                .uip(1)
+                .hour(hour)
+                .weekday(weekValue)
+                .fullShortUrl(fullShortUrl)
+                .gid(gid)
+                .date(LocalDateTime.now())
+                .build();
+        linkAccessStatsMapper.shortLinkStats(linkAccessStatsD0);
+    }
+
 }
