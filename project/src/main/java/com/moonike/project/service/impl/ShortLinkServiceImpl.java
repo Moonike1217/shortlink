@@ -4,6 +4,9 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -14,9 +17,11 @@ import com.moonike.project.common.convention.exception.ClientException;
 import com.moonike.project.common.convention.exception.ServiceException;
 import com.moonike.project.common.enums.ValidDateTypeEnum;
 import com.moonike.project.dao.entity.LinkAccessStatsDO;
+import com.moonike.project.dao.entity.LinkLocateStatsDO;
 import com.moonike.project.dao.entity.ShortLinkDO;
 import com.moonike.project.dao.entity.ShortLinkGotoDO;
 import com.moonike.project.dao.mapper.LinkAccessStatsMapper;
+import com.moonike.project.dao.mapper.LinkLocateStatsMapper;
 import com.moonike.project.dao.mapper.ShortLinkGotoMapper;
 import com.moonike.project.dao.mapper.ShortLinkMapper;
 import com.moonike.project.dto.req.ShortLinkCreateReqDTO;
@@ -42,6 +47,7 @@ import org.jsoup.nodes.Element;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -51,14 +57,12 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.moonike.project.common.constant.RedisKeyConstant.*;
+import static com.moonike.project.common.constant.ShortLinkConstant.AMAP_REMOTE_URL;
 
 /**
  * 短链接接口实现层
@@ -73,6 +77,10 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
     private final LinkAccessStatsMapper linkAccessStatsMapper;
+    private final LinkLocateStatsMapper linkLocateStatsMapper;
+
+    @Value("${short-link.stats.locate.amap-key}")
+    private String statsLocateAmapKey;
 
     /**
      * 创建短链接
@@ -411,6 +419,27 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .date(LocalDateTime.now())
                     .build();
             linkAccessStatsMapper.shortLinkStats(linkAccessStatsD0);
+            Map<String, Object> requestParam = new HashMap<>();
+            requestParam.put("ip", actualIP);
+            requestParam.put("key", statsLocateAmapKey);
+            String locateResultStr = HttpUtil.get(AMAP_REMOTE_URL, requestParam);
+            JSONObject locateResultObj = JSON.parseObject(locateResultStr);
+            String infoCode = locateResultObj.getString("infocode");
+            if (StrUtil.isNotBlank(infoCode) && StrUtil.equals(infoCode, "10000")) {
+                String province = locateResultObj.getString("province");
+                boolean unknownFlag = StrUtil.equals(province, "[]");
+                LinkLocateStatsDO linkLocateStatsDO = LinkLocateStatsDO.builder()
+                        .province(unknownFlag ? "未知" : province)
+                        .city(unknownFlag ? "未知" : locateResultObj.getString("city"))
+                        .adcode(unknownFlag ? "未知" : locateResultObj.getString("adcode"))
+                        .cnt(1)
+                        .fullShortUrl(fullShortUrl)
+                        .country("中国")
+                        .gid(gid)
+                        .date(LocalDateTime.now())
+                        .build();
+                linkLocateStatsMapper.shortLinkLocateStats(linkLocateStatsDO);
+            }
         } catch (Throwable ex) {
             log.error("统计短链接访问异常", ex);
         }
