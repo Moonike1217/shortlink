@@ -383,10 +383,14 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .map(Cookie::getValue)
                         .ifPresentOrElse(uv -> {
                             // uvCookie存在 非首次访问
-                            Long added = stringRedisTemplate.opsForSet().add("short-link:stats:uv:" + fullShortUrl, uv);
-                            uvFirstFlag.set(added != null && added > 0L);
+                            Long uvAdded = stringRedisTemplate.opsForSet().add(UV_STATS_SHORT_LINK_KEY + fullShortUrl, uv);
+                            uvFirstFlag.set(uvAdded != null && uvAdded > 0L);
                         }, addResponseCookieTask); // 首次访问 执行addResponseCookieTask
             }
+            String actualIP = LinkUtil.getActualIP((HttpServletRequest)request);
+            Long ipAdded = stringRedisTemplate.opsForSet().add(UIP_STATS_SHORT_LINK_KEY + fullShortUrl, actualIP);
+            boolean ipFirstFlag = ipAdded != null && ipAdded > 0L;
+
             if (gid == null) {
                 LambdaQueryWrapper<ShortLinkGotoDO> wrapper = Wrappers.lambdaQuery(ShortLinkGotoDO.class)
                         .eq(ShortLinkGotoDO::getFullShortUrl, fullShortUrl);
@@ -399,7 +403,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .pv(1)
                     // 根据用户首次访问标识uvFirstFlag来确定uv是否增加
                     .uv(uvFirstFlag.get() ? 1 : 0)
-                    .uip(1)
+                    .uip(ipFirstFlag ? 1 : 0)
                     .hour(hour)
                     .weekday(weekValue)
                     .fullShortUrl(fullShortUrl)

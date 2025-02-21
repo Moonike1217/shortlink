@@ -1,5 +1,7 @@
 package com.moonike.project.tookit;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.concurrent.ThreadLocalRandom;
@@ -40,4 +42,48 @@ public class LinkUtil {
             return dateMillis;
         }
     }
+
+    /**
+     * 获取用户真实IP
+     * @param request 请求
+     * @return 用户真实IP地址
+     */
+    public static String getActualIP(HttpServletRequest request) {
+        return request.getRemoteAddr();
+//        String ip = null;
+//        // 按优先级检查代理标头
+//        String[] headers = {"X-Forwarded-For", "Proxy-Client-IP", "WL-Proxy-Client-IP"};
+//        for (String header : headers) {
+//            ip = request.getHeader(header);
+//            if (isValidIp(ip)) {
+//                break;
+//            }
+//        }
+//
+//        // 处理 X-Forwarded-For 的多级代理情况（取第一个有效 IP）
+//        if (!isValidIp(ip) && ip != null && ip.contains(",")) {
+//            ip = Arrays.stream(ip.split(","))
+//                    .map(String::trim)
+//                    .filter(LinkUtil::isValidIp)
+//                    .findFirst()
+//                    .orElse(null);
+//        }
+//
+//        // 兜底方案
+//        return isValidIp(ip) ? ip : request.getRemoteAddr();
+    }
+
+    /**
+     * 判断是否是有效IP
+     * @param ip
+     * @return
+     */
+    private static boolean isValidIp(String ip) {
+        return ip != null && !ip.isEmpty()
+                && !"unknown".equalsIgnoreCase(ip)
+                && !ip.startsWith("127.0.0.1")
+                && !ip.startsWith("0:0:0:0:0:0:0:1");
+    }
+
+
 }
