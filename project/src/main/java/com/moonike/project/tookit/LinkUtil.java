@@ -145,4 +145,13 @@ public class LinkUtil {
         }
     }
 
+    /**
+     * 获取用户访问使用的网络
+     * @param request 请求
+     * @return 用户使用的网络类型
+     */
+    public static String getNetwork(HttpServletRequest request) {
+        // 暂时简单处理
+        return "Wifi";
+    }
 }
