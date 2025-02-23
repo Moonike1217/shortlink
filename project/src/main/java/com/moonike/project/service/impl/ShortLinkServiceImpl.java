@@ -16,14 +16,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.moonike.project.common.convention.exception.ClientException;
 import com.moonike.project.common.convention.exception.ServiceException;
 import com.moonike.project.common.enums.ValidDateTypeEnum;
-import com.moonike.project.dao.entity.LinkAccessStatsDO;
-import com.moonike.project.dao.entity.LinkLocateStatsDO;
-import com.moonike.project.dao.entity.ShortLinkDO;
-import com.moonike.project.dao.entity.ShortLinkGotoDO;
-import com.moonike.project.dao.mapper.LinkAccessStatsMapper;
-import com.moonike.project.dao.mapper.LinkLocateStatsMapper;
-import com.moonike.project.dao.mapper.ShortLinkGotoMapper;
-import com.moonike.project.dao.mapper.ShortLinkMapper;
+import com.moonike.project.dao.entity.*;
+import com.moonike.project.dao.mapper.*;
 import com.moonike.project.dto.req.ShortLinkCreateReqDTO;
 import com.moonike.project.dto.req.ShortLinkPageReqDTO;
 import com.moonike.project.dto.req.ShortLinkUpdateReqDTO;
@@ -78,6 +72,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     private final RedissonClient redissonClient;
     private final LinkAccessStatsMapper linkAccessStatsMapper;
     private final LinkLocateStatsMapper linkLocateStatsMapper;
+    private final LinkOsStatsMapper linkOsStatsMapper;
 
     @Value("${short-link.stats.locate.amap-key}")
     private String statsLocateAmapKey;
@@ -419,6 +414,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                     .date(LocalDateTime.now())
                     .build();
             linkAccessStatsMapper.shortLinkStats(linkAccessStatsD0);
+            // 访问位置统计
             Map<String, Object> requestParam = new HashMap<>();
             requestParam.put("ip", actualIP);
             requestParam.put("key", statsLocateAmapKey);
@@ -439,6 +435,15 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .date(LocalDateTime.now())
                         .build();
                 linkLocateStatsMapper.shortLinkLocateStats(linkLocateStatsDO);
+                // 操作系统统计
+                LinkOsStatsDO linkOsStatsDO = LinkOsStatsDO.builder()
+                        .os(LinkUtil.getOs((HttpServletRequest) request))
+                        .fullShortUrl(fullShortUrl)
+                        .gid(gid)
+                        .date(LocalDateTime.now())
+                        .cnt(1)
+                        .build();
+                linkOsStatsMapper.shortLinkOsState(linkOsStatsDO);
             }
         } catch (Throwable ex) {
             log.error("统计短链接访问异常", ex);
