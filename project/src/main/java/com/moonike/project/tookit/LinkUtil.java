@@ -132,4 +132,17 @@ public class LinkUtil {
 //        }
     }
 
+    /**
+     * 获取用户访问使用的设备
+     * @param request 请求
+     * @return 设备类型
+     */
+    public static String getDevice(HttpServletRequest request) {
+        if (UserAgentUtil.parse(request.getHeader("User-Agent")).isMobile()) {
+            return "Mobile";
+        } else {
+            return "PC";
+        }
+    }
+
 }
