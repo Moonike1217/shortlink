@@ -22,7 +22,7 @@ public class ShortLinkStatsLocateCNRespDTO {
     /**
      * 地区
      */
-    private String locale;
+    private String locate;
 
     /**
      * 占比

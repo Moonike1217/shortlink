@@ -32,14 +32,14 @@ public class ShortLinkStatsRespDTO {
     private Integer uip;
 
     /**
-     * 每日基础访问详情
+     * 每日基础访问详情(每日pv,uv,uip)
      */
     private List<ShortLinkStatsAccessDailyRespDTO> daily;
 
     /**
      * 地区访问详情（仅国内）
      */
-    private List<ShortLinkStatsLocateCNRespDTO> localeCnStats;
+    private List<ShortLinkStatsLocateCNRespDTO> locateCnStats;
 
     /**
      * 小时访问详情
