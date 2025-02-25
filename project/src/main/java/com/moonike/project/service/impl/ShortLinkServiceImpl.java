@@ -426,15 +426,21 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             Map<String, Object> requestParam = new HashMap<>();
             requestParam.put("ip", actualIP);
             requestParam.put("key", statsLocateAmapKey);
+            // 调用高德地图API获取地理位置信息
             String locateResultStr = HttpUtil.get(AMAP_REMOTE_URL, requestParam);
+            // 高德地图API返回JSON
             JSONObject locateResultObj = JSON.parseObject(locateResultStr);
+            // 从返回JSON中解析出infocode
             String infoCode = locateResultObj.getString("infocode");
+            String actualProvince;
+            String actualCity;
+            // infocode为10000时，表示查询成功 执行后续逻辑
             if (StrUtil.isNotBlank(infoCode) && StrUtil.equals(infoCode, "10000")) {
                 String province = locateResultObj.getString("province");
                 boolean unknownFlag = StrUtil.equals(province, "[]");
                 LinkLocateStatsDO linkLocateStatsDO = LinkLocateStatsDO.builder()
-                        .province(unknownFlag ? "未知" : province)
-                        .city(unknownFlag ? "未知" : locateResultObj.getString("city"))
+                        .province(actualProvince = unknownFlag ? "未知" : province)
+                        .city(actualCity = unknownFlag ? "未知" : locateResultObj.getString("city"))
                         .adcode(unknownFlag ? "未知" : locateResultObj.getString("adcode"))
                         .cnt(1)
                         .fullShortUrl(fullShortUrl)
@@ -493,9 +499,11 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .ip(actualIP)
                         .device(device)
                         .network(network)
+                        .locate(StrUtil.join("-", "中国", actualProvince, actualCity))
                         .build();
                 linkAccessLogsMapper.insert(linkAccessLogsDO);
-
+            } else {
+                log.error("调用高德地图API获取地理位置信息失败");
             }
         } catch (Throwable ex) {
             log.error("统计短链接访问异常", ex);
