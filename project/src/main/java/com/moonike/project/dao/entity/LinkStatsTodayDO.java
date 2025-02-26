@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 /**
  * 短链接今日统计实体
@@ -25,6 +25,11 @@ public class LinkStatsTodayDO extends BaseDO {
     private Long id;
 
     /**
+     * 分组标识
+     */
+    private String gid;
+
+    /**
      * 短链接
      */
     private String fullShortUrl;
@@ -32,7 +37,7 @@ public class LinkStatsTodayDO extends BaseDO {
     /**
      * 日期
      */
-    private LocalDateTime date;
+    private LocalDate date;
 
     /**
      * 今日pv

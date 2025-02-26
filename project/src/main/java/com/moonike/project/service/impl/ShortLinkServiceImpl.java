@@ -50,6 +50,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -78,6 +79,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     private final LinkAccessLogsMapper linkAccessLogsMapper;
     private final LinkDeviceStatsMapper linkDeviceStatsMapper;
     private final LinkNetworkStatsMapper linkNetworkStatsMapper;
+    private final LinkStatsTodayMapper linkStatsTodayMapper;
 
     @Value("${short-link.stats.locate.amap-key}")
     private String statsLocateAmapKey;
@@ -94,12 +96,23 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         String shortLinkSuffix = generateSuffix(requestParam);
         // 拼接完整链接
         String fullShortUrl = requestParam.getDomain() + "/" + shortLinkSuffix;
-        // 拷贝基础信息
-        ShortLinkDO shortLinkDO = BeanUtil.copyProperties(requestParam, ShortLinkDO.class);
-        shortLinkDO.setShortUri(shortLinkSuffix);
-        shortLinkDO.setFullShortUrl(requestParam.getDomain() + "/" + shortLinkSuffix);
-        shortLinkDO.setEnableStatus(0);
-        shortLinkDO.setFavicon(getFavicon(requestParam.getOriginUrl()));
+        //构造短链接实体
+        ShortLinkDO shortLinkDO = ShortLinkDO.builder()
+                .domain(requestParam.getDomain())
+                .originUrl(requestParam.getOriginUrl())
+                .gid(requestParam.getGid())
+                .createdType(requestParam.getCreatedType())
+                .validDateType(requestParam.getValidDateType())
+                .validDate(requestParam.getValidDate())
+                .describe(requestParam.getDescribe())
+                .shortUri(shortLinkSuffix)
+                .enableStatus(0)
+                .totalPv(0)
+                .totalUv(0)
+                .totalUip(0)
+                .fullShortUrl(fullShortUrl)
+                .favicon(getFavicon(requestParam.getOriginUrl()))
+                .build();
 
         // 创建短链接跳转实体，用来插入到t_link_goto表中
         ShortLinkGotoDO shortLinkGotoDO = ShortLinkGotoDO.builder()
@@ -141,11 +154,12 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
      */
     @Override
     public IPage<ShortLinkPageRespDTO> pageShortLink(ShortLinkPageReqDTO requestParam) {
-        LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
-                .eq(ShortLinkDO::getGid, requestParam.getGid())
-                .eq(ShortLinkDO::getDelFlag, 0)
-                .eq(ShortLinkDO::getEnableStatus, 0);
-        IPage<ShortLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
+//        LambdaQueryWrapper<ShortLinkDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkDO.class)
+//                .eq(ShortLinkDO::getGid, requestParam.getGid())
+//                .eq(ShortLinkDO::getDelFlag, 0)
+//                .eq(ShortLinkDO::getEnableStatus, 0);
+//        IPage<ShortLinkDO> resultPage = baseMapper.selectPage(requestParam, queryWrapper);
+        IPage<ShortLinkDO> resultPage = baseMapper.pageLink(requestParam);
         return resultPage.convert(item -> BeanUtil.toBean(item, ShortLinkPageRespDTO.class));
     }
 
@@ -363,7 +377,8 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
      * @param request
      * @param response
      */
-    private void shortLinkStats(String fullShortUrl, String gid, ServletRequest request, ServletResponse response) {
+    @Transactional(rollbackFor = Exception.class)
+    protected void shortLinkStats(String fullShortUrl, String gid, ServletRequest request, ServletResponse response) {
         // 用户首次访问标识
         AtomicBoolean uvFirstFlag = new AtomicBoolean();
         // 用户标识
@@ -502,6 +517,18 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .locate(StrUtil.join("-", "中国", actualProvince, actualCity))
                         .build();
                 linkAccessLogsMapper.insert(linkAccessLogsDO);
+                // 访问数据自增
+                baseMapper.incrementStats(gid, fullShortUrl, 1, uvFirstFlag.get() ? 1 : 0, ipFirstFlag ? 1 : 0);
+                // 今日访问数据记录
+                LinkStatsTodayDO linkStatsTodayDO = LinkStatsTodayDO.builder()
+                        .gid(gid)
+                        .fullShortUrl(fullShortUrl)
+                        .date(LocalDate.now())
+                        .todayPv(1)
+                        .todayUv(uvFirstFlag.get() ? 1 : 0)
+                        .todayUip(ipFirstFlag ? 1 : 0)
+                        .build();
+                linkStatsTodayMapper.shortLinkTodayState(linkStatsTodayDO);
             } else {
                 log.error("调用高德地图API获取地理位置信息失败");
             }
