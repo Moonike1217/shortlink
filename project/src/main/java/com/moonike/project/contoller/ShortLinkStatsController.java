@@ -1,8 +1,11 @@
 package com.moonike.project.contoller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.project.common.convention.result.Result;
 import com.moonike.project.common.convention.result.Results;
+import com.moonike.project.dto.req.ShortLinkStatsAccessRecordReqDTO;
 import com.moonike.project.dto.req.ShortLinkStatsReqDTO;
+import com.moonike.project.dto.resp.ShortLinkStatsAccessRecordRespDTO;
 import com.moonike.project.dto.resp.ShortLinkStatsRespDTO;
 import com.moonike.project.service.ShortLinkStatsService;
 import lombok.RequiredArgsConstructor;
@@ -34,13 +37,13 @@ public class ShortLinkStatsController {
 //        return Results.success(shortLinkStatsService.groupShortLinkStats(requestParam));
 //    }
 //
-//    /**
-//     * 访问单个短链接指定时间内访问记录监控数据
-//     */
-//    @GetMapping("/api/short-link/v1/stats/access-record")
-//    public Result<IPage<ShortLinkStatsAccessRecordRespDTO>> shortLinkStatsAccessRecord(ShortLinkStatsAccessRecordReqDTO requestParam) {
-//        return Results.success(shortLinkStatsService.shortLinkStatsAccessRecord(requestParam));
-//    }
+    /**
+     * 访问单个短链接指定时间内访问记录监控数据
+     */
+    @GetMapping("/api/shortlink/v1/stats/access-record")
+    public Result<IPage<ShortLinkStatsAccessRecordRespDTO>> shortLinkStatsAccessRecord(ShortLinkStatsAccessRecordReqDTO requestParam) {
+        return Results.success(shortLinkStatsService.shortLinkStatsAccessRecord(requestParam));
+    }
 //
 //    /**
 //     * 访问分组短链接指定时间内访问记录监控数据

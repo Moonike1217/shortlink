@@ -1,18 +1,19 @@
 package com.moonike.project.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.moonike.admin.common.biz.user.UserContext;
 import com.moonike.admin.dao.entity.GroupDO;
 import com.moonike.project.common.convention.exception.ServiceException;
-import com.moonike.project.dao.entity.LinkAccessStatsDO;
-import com.moonike.project.dao.entity.LinkDeviceStatsDO;
-import com.moonike.project.dao.entity.LinkLocateStatsDO;
-import com.moonike.project.dao.entity.LinkNetworkStatsDO;
+import com.moonike.project.dao.entity.*;
 import com.moonike.project.dao.mapper.*;
+import com.moonike.project.dto.req.ShortLinkStatsAccessRecordReqDTO;
 import com.moonike.project.dto.req.ShortLinkStatsReqDTO;
 import com.moonike.project.dto.resp.*;
 import com.moonike.project.service.ShortLinkStatsService;
@@ -255,5 +256,43 @@ public class ShortLinkStatsImpl implements ShortLinkStatsService {
         if (CollUtil.isEmpty(groupDOList)) {
             throw new ServiceException("用户信息与分组标识不匹配");
         }
+    }
+
+    @Override
+    public IPage<ShortLinkStatsAccessRecordRespDTO> shortLinkStatsAccessRecord(ShortLinkStatsAccessRecordReqDTO requestParam) {
+        // checkGroupBelongToUser(requestParam.getGid());
+        LambdaQueryWrapper<LinkAccessLogsDO> queryWrapper = Wrappers.lambdaQuery(LinkAccessLogsDO.class)
+                .eq(LinkAccessLogsDO::getFullShortUrl, requestParam.getFullShortUrl())
+                .between(LinkAccessLogsDO::getCreateTime, requestParam.getStartDate(), requestParam.getEndDate())
+                .eq(LinkAccessLogsDO::getDelFlag, 0)
+                .orderByDesc(LinkAccessLogsDO::getCreateTime);
+        IPage<LinkAccessLogsDO> linkAccessLogsDOIPage = linkAccessLogsMapper.selectPage(requestParam, queryWrapper);
+        if (CollUtil.isEmpty(linkAccessLogsDOIPage.getRecords())) {
+            return new Page<>();
+        }
+        IPage<ShortLinkStatsAccessRecordRespDTO> actualResult = linkAccessLogsDOIPage
+                .convert(each -> BeanUtil.toBean(each, ShortLinkStatsAccessRecordRespDTO.class));
+        // 网站日志中的用户List
+        List<String> userAccessLogsList = actualResult.getRecords().stream()
+                .map(ShortLinkStatsAccessRecordRespDTO::getUser)
+                .toList();
+        List<Map<String, Object>> uvTypeList = linkAccessLogsMapper.selectUvTypeByUsers(
+                requestParam.getGid(),
+                requestParam.getFullShortUrl(),
+                requestParam.getEnableStatus(),
+                requestParam.getStartDate(),
+                requestParam.getEndDate(),
+                userAccessLogsList
+        );
+        actualResult.getRecords().forEach(each -> {
+            String uvType = uvTypeList.stream()
+                    .filter(item -> Objects.equals(each.getUser(), item.get("user")))
+                    .findFirst()
+                    .map(item -> item.get("uvType"))
+                    .map(Object::toString)
+                    .orElse("旧访客");
+            each.setUvType(uvType);
+        });
+        return actualResult;
     }
 }
