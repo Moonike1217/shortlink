@@ -167,26 +167,26 @@ public interface LinkAccessLogsMapper extends BaseMapper<LinkAccessLogsDO> {
             "GROUP BY " +
             "    tlal.full_short_url, tl.gid;")
     LinkAccessStatsDO findPvUvUidStatsByShortLink(@Param("param") ShortLinkStatsReqDTO requestParam);
-//
-//    /**
-//     * 根据分组获取指定日期内PV、UV、UIP数据
-//     */
-//    @Select("SELECT " +
-//            "    COUNT(tlal.user) AS pv, " +
-//            "    COUNT(DISTINCT tlal.user) AS uv, " +
-//            "    COUNT(DISTINCT tlal.ip) AS uip " +
-//            "FROM " +
-//            "    t_link tl INNER JOIN " +
-//            "    t_link_access_logs tlal ON tl.full_short_url = tlal.full_short_url " +
-//            "WHERE " +
-//            "    tl.gid = #{param.gid} " +
-//            "    AND tl.del_flag = '0' " +
-//            "    AND tl.enable_status = '0' " +
-//            "    AND tlal.create_time BETWEEN CONCAT(#{param.startDate},' 00:00:00')  and CONCAT(#{param.endDate},' 23:59:59') " +
-//            "GROUP BY " +
-//            "    tl.gid;")
-//    LinkAccessStatsDO findPvUvUidStatsByGroup(@Param("param") ShortLinkGroupStatsReqDTO requestParam);
-//
+
+    /**
+     * 根据分组获取指定日期内PV、UV、UIP数据
+     */
+    @Select("SELECT " +
+            "    COUNT(tlal.user) AS pv, " +
+            "    COUNT(DISTINCT tlal.user) AS uv, " +
+            "    COUNT(DISTINCT tlal.ip) AS uip " +
+            "FROM " +
+            "    t_link tl INNER JOIN " +
+            "    t_link_access_logs tlal ON tl.full_short_url = tlal.full_short_url " +
+            "WHERE " +
+            "    tl.gid = #{param.gid} " +
+            "    AND tl.del_flag = '0' " +
+            "    AND tl.enable_status = '0' " +
+            "    AND tlal.create_time BETWEEN CONCAT(#{param.startDate},' 00:00:00')  and CONCAT(#{param.endDate},' 23:59:59') " +
+            "GROUP BY " +
+            "    tl.gid;")
+    LinkAccessStatsDO findPvUvUidStatsByGroup(@Param("param") ShortLinkGroupStatsReqDTO requestParam);
+
 //    @Select("SELECT " +
 //            "    tlal.* " +
 //            "FROM " +

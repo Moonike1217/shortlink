@@ -3,6 +3,7 @@ package com.moonike.project.contoller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.project.common.convention.result.Result;
 import com.moonike.project.common.convention.result.Results;
+import com.moonike.project.dto.req.ShortLinkGroupStatsReqDTO;
 import com.moonike.project.dto.req.ShortLinkStatsAccessRecordReqDTO;
 import com.moonike.project.dto.req.ShortLinkStatsReqDTO;
 import com.moonike.project.dto.resp.ShortLinkStatsAccessRecordRespDTO;
@@ -29,14 +30,14 @@ public class ShortLinkStatsController {
         return Results.success(shortLinkStatsService.oneShortLinkStats(requestParam));
     }
 
-//    /**
-//     * 访问分组短链接指定时间内监控数据
-//     */
-//    @GetMapping("/api/short-link/v1/stats/group")
-//    public Result<ShortLinkStatsRespDTO> groupShortLinkStats(ShortLinkGroupStatsReqDTO requestParam) {
-//        return Results.success(shortLinkStatsService.groupShortLinkStats(requestParam));
-//    }
-//
+    /**
+     * 访问分组短链接指定时间内监控数据
+     */
+    @GetMapping("/api/short-link/v1/stats/group")
+    public Result<ShortLinkStatsRespDTO> groupShortLinkStats(ShortLinkGroupStatsReqDTO requestParam) {
+        return Results.success(shortLinkStatsService.groupShortLinkStats(requestParam));
+    }
+
     /**
      * 访问单个短链接指定时间内访问记录监控数据
      */

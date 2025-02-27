@@ -2,6 +2,7 @@ package com.moonike.project.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.moonike.project.dao.entity.LinkLocateStatsDO;
+import com.moonike.project.dto.req.ShortLinkGroupStatsReqDTO;
 import com.moonike.project.dto.req.ShortLinkStatsReqDTO;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
@@ -40,22 +41,22 @@ public interface LinkLocateStatsMapper extends BaseMapper<LinkLocateStatsDO> {
             "GROUP BY " +
             "    tlls.full_short_url, tl.gid, tlls.province;")
     List<LinkLocateStatsDO> listLocateByShortLink(@Param("param") ShortLinkStatsReqDTO requestParam);
-//
-//    /**
-//     * 根据分组获取指定日期内地区监控数据
-//     */
-//    @Select("SELECT " +
-//            "    tlls.province, " +
-//            "    SUM(tlls.cnt) AS cnt " +
-//            "FROM " +
-//            "    t_link tl INNER JOIN " +
-//            "    t_link_locale_stats tlls ON tl.full_short_url = tlls.full_short_url " +
-//            "WHERE " +
-//            "    tl.gid = #{param.gid} " +
-//            "    AND tl.del_flag = '0' " +
-//            "    AND tl.enable_status = '0' " +
-//            "    AND tlls.date BETWEEN #{param.startDate} and #{param.endDate} " +
-//            "GROUP BY " +
-//            "    tl.gid, tlls.province;")
-//    List<LinkLocaleStatsDO> listLocaleByGroup(@Param("param") ShortLinkGroupStatsReqDTO requestParam);
+
+    /**
+     * 根据分组获取指定日期内地区监控数据
+     */
+    @Select("SELECT " +
+            "    tlls.province, " +
+            "    SUM(tlls.cnt) AS cnt " +
+            "FROM " +
+            "    t_link tl INNER JOIN " +
+            "    t_link_locate_stats tlls ON tl.full_short_url = tlls.full_short_url " +
+            "WHERE " +
+            "    tl.gid = #{param.gid} " +
+            "    AND tl.del_flag = '0' " +
+            "    AND tl.enable_status = '0' " +
+            "    AND tlls.date BETWEEN #{param.startDate} and #{param.endDate} " +
+            "GROUP BY " +
+            "    tl.gid, tlls.province;")
+    List<LinkLocateStatsDO> listLocateByGroup(@Param("param") ShortLinkGroupStatsReqDTO requestParam);
 }
