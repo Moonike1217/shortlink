@@ -13,6 +13,7 @@ import com.moonike.admin.dao.entity.GroupDO;
 import com.moonike.project.common.convention.exception.ServiceException;
 import com.moonike.project.dao.entity.*;
 import com.moonike.project.dao.mapper.*;
+import com.moonike.project.dto.req.ShortLinkGroupStatsAccessRecordReqDTO;
 import com.moonike.project.dto.req.ShortLinkGroupStatsReqDTO;
 import com.moonike.project.dto.req.ShortLinkStatsAccessRecordReqDTO;
 import com.moonike.project.dto.req.ShortLinkStatsReqDTO;
@@ -461,5 +462,34 @@ public class ShortLinkStatsImpl implements ShortLinkStatsService {
                 .deviceStats(deviceStats)
                 .networkStats(networkStats)
                 .build();
+    }
+
+    public IPage<ShortLinkStatsAccessRecordRespDTO> groupShortLinkStatsAccessRecord(ShortLinkGroupStatsAccessRecordReqDTO requestParam) {
+        // checkGroupBelongToUser(requestParam.getGid());
+        IPage<LinkAccessLogsDO> linkAccessLogsDOIPage = linkAccessLogsMapper.selectGroupPage(requestParam);
+        if (CollUtil.isEmpty(linkAccessLogsDOIPage.getRecords())) {
+            return new Page<>();
+        }
+        IPage<ShortLinkStatsAccessRecordRespDTO> actualResult = linkAccessLogsDOIPage
+                .convert(each -> BeanUtil.toBean(each, ShortLinkStatsAccessRecordRespDTO.class));
+        List<String> userAccessLogsList = actualResult.getRecords().stream()
+                .map(ShortLinkStatsAccessRecordRespDTO::getUser)
+                .toList();
+        List<Map<String, Object>> uvTypeList = linkAccessLogsMapper.selectGroupUvTypeByUsers(
+                requestParam.getGid(),
+                requestParam.getStartDate(),
+                requestParam.getEndDate(),
+                userAccessLogsList
+        );
+        actualResult.getRecords().forEach(each -> {
+            String uvType = uvTypeList.stream()
+                    .filter(item -> Objects.equals(each.getUser(), item.get("user")))
+                    .findFirst()
+                    .map(item -> item.get("uvType"))
+                    .map(Object::toString)
+                    .orElse("旧访客");
+            each.setUvType(uvType);
+        });
+        return actualResult;
     }
 }

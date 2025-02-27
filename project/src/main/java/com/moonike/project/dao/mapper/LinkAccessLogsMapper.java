@@ -1,8 +1,10 @@
 package com.moonike.project.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.moonike.project.dao.entity.LinkAccessLogsDO;
 import com.moonike.project.dao.entity.LinkAccessStatsDO;
+import com.moonike.project.dto.req.ShortLinkGroupStatsAccessRecordReqDTO;
 import com.moonike.project.dto.req.ShortLinkGroupStatsReqDTO;
 import com.moonike.project.dto.req.ShortLinkStatsReqDTO;
 import org.apache.ibatis.annotations.Param;
@@ -117,37 +119,37 @@ public interface LinkAccessLogsMapper extends BaseMapper<LinkAccessLogsDO> {
             @Param("userAccessLogsList") List<String> userAccessLogsList
     );
 
-//    /**
-//     * 获取分组用户信息是否新老访客
-//     */
-//    @Select("<script> " +
-//            "SELECT " +
-//            "    tlal.user, " +
-//            "    CASE " +
-//            "        WHEN MIN(tlal.create_time) BETWEEN #{startDate} AND #{endDate} THEN '新访客' " +
-//            "        ELSE '老访客' " +
-//            "    END AS uvType " +
-//            "FROM " +
-//            "    t_link tl INNER JOIN " +
-//            "    t_link_access_logs tlal ON tl.full_short_url = tlal.full_short_url " +
-//            "WHERE " +
-//            "    tl.gid = #{gid} " +
-//            "    AND tl.del_flag = '0' " +
-//            "    AND tl.enable_status = '0' " +
-//            "    AND tlal.user IN " +
-//            "    <foreach item='item' index='index' collection='userAccessLogsList' open='(' separator=',' close=')'> " +
-//            "        #{item} " +
-//            "    </foreach> " +
-//            "GROUP BY " +
-//            "    tlal.user;" +
-//            "</script>")
-//    List<Map<String, Object>> selectGroupUvTypeByUsers(
-//            @Param("gid") String gid,
-//            @Param("startDate") String startDate,
-//            @Param("endDate") String endDate,
-//            @Param("userAccessLogsList") List<String> userAccessLogsList
-//    );
-//
+    /**
+     * 获取分组用户信息是否新老访客
+     */
+    @Select("<script> " +
+            "SELECT " +
+            "    tlal.user, " +
+            "    CASE " +
+            "        WHEN MIN(tlal.create_time) BETWEEN #{startDate} AND #{endDate} THEN '新访客' " +
+            "        ELSE '老访客' " +
+            "    END AS uvType " +
+            "FROM " +
+            "    t_link tl INNER JOIN " +
+            "    t_link_access_logs tlal ON tl.full_short_url = tlal.full_short_url " +
+            "WHERE " +
+            "    tl.gid = #{gid} " +
+            "    AND tl.del_flag = '0' " +
+            "    AND tl.enable_status = '0' " +
+            "    AND tlal.user IN " +
+            "    <foreach item='item' index='index' collection='userAccessLogsList' open='(' separator=',' close=')'> " +
+            "        #{item} " +
+            "    </foreach> " +
+            "GROUP BY " +
+            "    tlal.user;" +
+            "</script>")
+    List<Map<String, Object>> selectGroupUvTypeByUsers(
+            @Param("gid") String gid,
+            @Param("startDate") String startDate,
+            @Param("endDate") String endDate,
+            @Param("userAccessLogsList") List<String> userAccessLogsList
+    );
+
     /**
      * 根据短链接获取指定日期内PV、UV、UIP数据
      */
@@ -187,17 +189,17 @@ public interface LinkAccessLogsMapper extends BaseMapper<LinkAccessLogsDO> {
             "    tl.gid;")
     LinkAccessStatsDO findPvUvUidStatsByGroup(@Param("param") ShortLinkGroupStatsReqDTO requestParam);
 
-//    @Select("SELECT " +
-//            "    tlal.* " +
-//            "FROM " +
-//            "    t_link tl " +
-//            "    INNER JOIN t_link_access_logs tlal ON tl.full_short_url = tlal.full_short_url " +
-//            "WHERE " +
-//            "    tl.gid = #{param.gid} " +
-//            "    AND tl.del_flag = '0' " +
-//            "    AND tl.enable_status = '0' " +
-//            "    AND tlal.create_time BETWEEN CONCAT(#{param.startDate},' 00:00:00')  and CONCAT(#{param.endDate},' 23:59:59') " +
-//            "ORDER BY " +
-//            "    tlal.create_time DESC")
-//    IPage<LinkAccessLogsDO> selectGroupPage(@Param("param") ShortLinkGroupStatsAccessRecordReqDTO requestParam);
+    @Select("SELECT " +
+            "    tlal.* " +
+            "FROM " +
+            "    t_link tl " +
+            "    INNER JOIN t_link_access_logs tlal ON tl.full_short_url = tlal.full_short_url " +
+            "WHERE " +
+            "    tl.gid = #{param.gid} " +
+            "    AND tl.del_flag = '0' " +
+            "    AND tl.enable_status = '0' " +
+            "    AND tlal.create_time BETWEEN CONCAT(#{param.startDate},' 00:00:00')  and CONCAT(#{param.endDate},' 23:59:59') " +
+            "ORDER BY " +
+            "    tlal.create_time DESC")
+    IPage<LinkAccessLogsDO> selectGroupPage(@Param("param") ShortLinkGroupStatsAccessRecordReqDTO requestParam);
 }
