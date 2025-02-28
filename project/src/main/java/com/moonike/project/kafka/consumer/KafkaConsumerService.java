@@ -70,7 +70,6 @@ public class KafkaConsumerService {
         }
     }
 
-
     public void actualSaveShortLinkStats(ShortLinkStatsRecordDTO shortLinkStatsRecordDTO) {
         RReadWriteLock readWriteLock = redissonClient.getReadWriteLock(String.format(LOCK_SHORTLINK_STATS_KEY, shortLinkStatsRecordDTO.getFullShortUrl()));
         RLock rLock = readWriteLock.readLock();

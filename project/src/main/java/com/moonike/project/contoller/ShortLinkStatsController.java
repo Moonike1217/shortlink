@@ -34,7 +34,7 @@ public class ShortLinkStatsController {
     /**
      * 访问分组短链接指定时间内监控数据
      */
-    @GetMapping("/api/short-link/v1/stats/group")
+    @GetMapping("/api/shortlink/v1/stats/group")
     public Result<ShortLinkStatsRespDTO> groupShortLinkStats(ShortLinkGroupStatsReqDTO requestParam) {
         return Results.success(shortLinkStatsService.groupShortLinkStats(requestParam));
     }
@@ -50,7 +50,7 @@ public class ShortLinkStatsController {
     /**
      * 访问分组短链接指定时间内访问记录监控数据
      */
-    @GetMapping("/api/short-link/v1/stats/access-record/group")
+    @GetMapping("/api/shortlink/v1/stats/access-record/group")
     public Result<IPage<ShortLinkStatsAccessRecordRespDTO>> groupShortLinkStatsAccessRecord(ShortLinkGroupStatsAccessRecordReqDTO requestParam) {
         return Results.success(shortLinkStatsService.groupShortLinkStatsAccessRecord(requestParam));
     }
