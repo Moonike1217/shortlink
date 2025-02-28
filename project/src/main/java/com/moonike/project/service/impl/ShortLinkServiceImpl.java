@@ -4,9 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -16,8 +14,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.moonike.project.common.convention.exception.ClientException;
 import com.moonike.project.common.convention.exception.ServiceException;
 import com.moonike.project.common.enums.ValidDateTypeEnum;
-import com.moonike.project.dao.entity.*;
-import com.moonike.project.dao.mapper.*;
+import com.moonike.project.dao.entity.ShortLinkDO;
+import com.moonike.project.dao.entity.ShortLinkGotoDO;
+import com.moonike.project.dao.mapper.ShortLinkGotoMapper;
+import com.moonike.project.dao.mapper.ShortLinkMapper;
+import com.moonike.project.dto.biz.ShortLinkStatsRecordDTO;
 import com.moonike.project.dto.req.ShortLinkCreateReqDTO;
 import com.moonike.project.dto.req.ShortLinkPageReqDTO;
 import com.moonike.project.dto.req.ShortLinkUpdateReqDTO;
@@ -41,24 +42,26 @@ import org.jsoup.nodes.Element;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.moonike.project.common.constant.RedisKeyConstant.*;
-import static com.moonike.project.common.constant.ShortLinkConstant.AMAP_REMOTE_URL;
+import static com.moonike.project.kafka.constant.KafkaConstant.TOPIC_SHORTLINK_STATS;
 
 /**
  * 短链接接口实现层
@@ -72,17 +75,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     private final ShortLinkGotoMapper shortLinkGotoMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
-    private final LinkAccessStatsMapper linkAccessStatsMapper;
-    private final LinkLocateStatsMapper linkLocateStatsMapper;
-    private final LinkOsStatsMapper linkOsStatsMapper;
-    private final LinkBrowserStatsMapper linkBrowserStatsMapper;
-    private final LinkAccessLogsMapper linkAccessLogsMapper;
-    private final LinkDeviceStatsMapper linkDeviceStatsMapper;
-    private final LinkNetworkStatsMapper linkNetworkStatsMapper;
-    private final LinkStatsTodayMapper linkStatsTodayMapper;
-
-    @Value("${short-link.stats.locate.amap-key}")
-    private String statsLocateAmapKey;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     /**
      * 创建短链接
@@ -252,17 +245,25 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         // 先在缓存中查询原链接
         String originalLink = stringRedisTemplate.opsForValue().get(String.format(GOTO_SHORT_LINK_KEY, fullShortUrl));
         if (StrUtil.isNotBlank(originalLink)) {
-            // 存在原链接，直接重定向
-            shortLinkStats(fullShortUrl, null, request, response);
+            // 存在原链接 首先异步记录监控信息
+            kafkaTemplate.send(TOPIC_SHORTLINK_STATS, JSON.toJSONString(
+                    buildShortLinkStatsRecordDTO(
+                            fullShortUrl,
+                            request,
+                            response)
+                    )
+            );
+            // 然后重定向
             ((HttpServletResponse) response).sendRedirect(originalLink);
             return;
         }
-        // 不存在原链接，为了防止缓存穿透，需要先查询布隆过滤器，然后查询Redis中是否缓存了对应key的空值
+        // 不存在原链接，为了防止缓存穿透，需要先查询布隆过滤器
         boolean contains = shortUriCreateCachePenetrationBloomFilter.contains(fullShortUrl);
         if (!contains) {
             ((HttpServletResponse) response).sendRedirect("/page/notfound");
             return;
         }
+        // 然后查询Redis中是否缓存了对应key的空值(这里为了便于查询 缓存的其实不是空值 而是"-")
         String s = stringRedisTemplate.opsForValue().get(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, fullShortUrl));
         if (StrUtil.isNotBlank(s)) {
             ((HttpServletResponse) response).sendRedirect("/page/notfound");
@@ -275,7 +276,13 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             // Double-Checked Lock 双重判定锁，防止多个请求达到数据库，保证只有第一个失效请求达到数据库，解决缓存击穿
             originalLink = stringRedisTemplate.opsForValue().get(String.format(GOTO_SHORT_LINK_KEY, fullShortUrl));
             if (StrUtil.isNotBlank(originalLink)) {
-                shortLinkStats(fullShortUrl, null, request, response);
+                kafkaTemplate.send(TOPIC_SHORTLINK_STATS, JSON.toJSONString(
+                                buildShortLinkStatsRecordDTO(
+                                        fullShortUrl,
+                                        request,
+                                        response)
+                        )
+                );
                 ((HttpServletResponse) response).sendRedirect(originalLink);
                 return;
             }
@@ -315,7 +322,13 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         TimeUnit.MILLISECONDS
                 );
                 // 记录统计数据
-                shortLinkStats(fullShortUrl, shortLinkDO.getGid(), request, response);
+                kafkaTemplate.send(TOPIC_SHORTLINK_STATS, JSON.toJSONString(
+                                buildShortLinkStatsRecordDTO(
+                                        fullShortUrl,
+                                        request,
+                                        response)
+                        )
+                );
                 // 重定向
                 ((HttpServletResponse) response).sendRedirect(shortLinkDO.getOriginUrl());
             }
@@ -379,161 +392,61 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
      */
     @Transactional(rollbackFor = Exception.class)
     protected void shortLinkStats(String fullShortUrl, String gid, ServletRequest request, ServletResponse response) {
+
+    }
+
+    private ShortLinkStatsRecordDTO buildShortLinkStatsRecordDTO(String fullShortUrl, ServletRequest request, ServletResponse response) {
         // 用户首次访问标识
         AtomicBoolean uvFirstFlag = new AtomicBoolean();
         // 用户标识
         AtomicReference<String> uv = new AtomicReference<>();
         Cookie[] cookies = ((HttpServletRequest) request).getCookies();
-        try {
-            Runnable addResponseCookieTask = () -> {
-                // 用户首次访问 发放uvCookie
-                uv.set(UUID.fastUUID().toString());
-                Cookie uvCookie = new Cookie("uv", uv.get());
-                uvCookie.setMaxAge(60 * 60 * 24 * 365);
-                // 注意:StrUtil的sub是左闭右开的
-                uvCookie.setPath(StrUtil.sub(fullShortUrl, fullShortUrl.indexOf('/'), fullShortUrl.length()));
-                // 设置用户首次访问标识
-                uvFirstFlag.set(Boolean.TRUE);
-                ((HttpServletResponse) response).addCookie(uvCookie);
-                stringRedisTemplate.opsForSet().add("short-link:stats:uv:" + fullShortUrl, uv.get());
-            };
-            if (ArrayUtil.isEmpty(cookies)) {
-                // cookies数组为空 用户首次访问 执行addResponseCookieTask
-                addResponseCookieTask.run();
-            } else {
-                // cookies数组不为空 尝试获取uvCookie
-                Arrays.stream(cookies)
-                        .filter(cookie -> cookie.getName().equals("uv"))
-                        .findFirst()
-                        .map(Cookie::getValue)
-                        .ifPresentOrElse(each -> {
-                            // uvCookie存在 非首次访问
-                            uv.set(each);
-                            Long uvAdded = stringRedisTemplate.opsForSet().add(UV_STATS_SHORT_LINK_KEY + fullShortUrl, each);
-                            uvFirstFlag.set(uvAdded != null && uvAdded > 0L);
-                        }, addResponseCookieTask); // 首次访问 执行addResponseCookieTask
-            }
-            String actualIP = LinkUtil.getActualIP((HttpServletRequest)request);
-            Long ipAdded = stringRedisTemplate.opsForSet().add(UIP_STATS_SHORT_LINK_KEY + fullShortUrl, actualIP);
-            boolean ipFirstFlag = ipAdded != null && ipAdded > 0L;
-
-            if (gid == null) {
-                LambdaQueryWrapper<ShortLinkGotoDO> wrapper = Wrappers.lambdaQuery(ShortLinkGotoDO.class)
-                        .eq(ShortLinkGotoDO::getFullShortUrl, fullShortUrl);
-                ShortLinkGotoDO shortLinkGotoDO = shortLinkGotoMapper.selectOne(wrapper);
-                gid = shortLinkGotoDO.getGid();
-            }
-            int hour = LocalDateTime.now().getHour();
-            int weekValue = LocalDateTime.now().getDayOfWeek().getValue();
-            LinkAccessStatsDO linkAccessStatsD0 = LinkAccessStatsDO.builder()
-                    .pv(1)
-                    // 根据用户首次访问标识uvFirstFlag来确定uv是否增加
-                    .uv(uvFirstFlag.get() ? 1 : 0)
-                    .uip(ipFirstFlag ? 1 : 0)
-                    .hour(hour)
-                    .weekday(weekValue)
-                    .fullShortUrl(fullShortUrl)
-                    .gid(gid)
-                    .date(LocalDateTime.now())
-                    .build();
-            linkAccessStatsMapper.shortLinkStats(linkAccessStatsD0);
-            // 访问位置统计
-            Map<String, Object> requestParam = new HashMap<>();
-            requestParam.put("ip", actualIP);
-            requestParam.put("key", statsLocateAmapKey);
-            // 调用高德地图API获取地理位置信息
-            String locateResultStr = HttpUtil.get(AMAP_REMOTE_URL, requestParam);
-            // 高德地图API返回JSON
-            JSONObject locateResultObj = JSON.parseObject(locateResultStr);
-            // 从返回JSON中解析出infocode
-            String infoCode = locateResultObj.getString("infocode");
-            String actualProvince;
-            String actualCity;
-            // infocode为10000时，表示查询成功 执行后续逻辑
-            if (StrUtil.isNotBlank(infoCode) && StrUtil.equals(infoCode, "10000")) {
-                String province = locateResultObj.getString("province");
-                boolean unknownFlag = StrUtil.equals(province, "[]");
-                LinkLocateStatsDO linkLocateStatsDO = LinkLocateStatsDO.builder()
-                        .province(actualProvince = unknownFlag ? "未知" : province)
-                        .city(actualCity = unknownFlag ? "未知" : locateResultObj.getString("city"))
-                        .adcode(unknownFlag ? "未知" : locateResultObj.getString("adcode"))
-                        .cnt(1)
-                        .fullShortUrl(fullShortUrl)
-                        .country("中国")
-                        .gid(gid)
-                        .date(LocalDateTime.now())
-                        .build();
-                linkLocateStatsMapper.shortLinkLocateStats(linkLocateStatsDO);
-                // 操作系统统计
-                String os = LinkUtil.getOs((HttpServletRequest) request);
-                LinkOsStatsDO linkOsStatsDO = LinkOsStatsDO.builder()
-                        .os(os)
-                        .fullShortUrl(fullShortUrl)
-                        .gid(gid)
-                        .date(LocalDateTime.now())
-                        .cnt(1)
-                        .build();
-                linkOsStatsMapper.shortLinkOsState(linkOsStatsDO);
-                // 浏览器统计
-                String browser = LinkUtil.getBrowser((HttpServletRequest) request);
-                LinkBrowserStatsDO linkBrowserStatsDO = LinkBrowserStatsDO.builder()
-                        .browser(browser)
-                        .fullShortUrl(fullShortUrl)
-                        .gid(gid)
-                        .date(LocalDateTime.now())
-                        .cnt(1)
-                        .build();
-                linkBrowserStatsMapper.shortLinkBrowserStats(linkBrowserStatsDO);
-                // 访问设备统计
-                String device = LinkUtil.getDevice((HttpServletRequest) request);
-                LinkDeviceStatsDO linkDeviceStatsDO = LinkDeviceStatsDO.builder()
-                        .device(device)
-                        .fullShortUrl(fullShortUrl)
-                        .gid(gid)
-                        .date(LocalDateTime.now())
-                        .cnt(1)
-                        .build();
-                linkDeviceStatsMapper.shortLinkDeviceStats(linkDeviceStatsDO);
-                // 访问网络统计
-                String network = LinkUtil.getNetwork((HttpServletRequest) request);
-                LinkNetworkStatsDO linkNetworkStatsDO = LinkNetworkStatsDO.builder()
-                        .network(network)
-                        .fullShortUrl(fullShortUrl)
-                        .gid(gid)
-                        .date(LocalDateTime.now())
-                        .cnt(1)
-                        .build();
-                linkNetworkStatsMapper.shortLinkNetworkStats(linkNetworkStatsDO);
-                // 短链接访问统计
-                LinkAccessLogsDO linkAccessLogsDO = LinkAccessLogsDO.builder()
-                        .fullShortUrl(fullShortUrl)
-                        .gid(gid)
-                        .user(uv.get())
-                        .browser(browser)
-                        .os(os)
-                        .ip(actualIP)
-                        .device(device)
-                        .network(network)
-                        .locate(StrUtil.join("-", "中国", actualProvince, actualCity))
-                        .build();
-                linkAccessLogsMapper.insert(linkAccessLogsDO);
-                // 访问数据自增
-                baseMapper.incrementStats(gid, fullShortUrl, 1, uvFirstFlag.get() ? 1 : 0, ipFirstFlag ? 1 : 0);
-                // 今日访问数据记录
-                LinkStatsTodayDO linkStatsTodayDO = LinkStatsTodayDO.builder()
-                        .gid(gid)
-                        .fullShortUrl(fullShortUrl)
-                        .date(LocalDate.now())
-                        .todayPv(1)
-                        .todayUv(uvFirstFlag.get() ? 1 : 0)
-                        .todayUip(ipFirstFlag ? 1 : 0)
-                        .build();
-                linkStatsTodayMapper.shortLinkTodayState(linkStatsTodayDO);
-            } else {
-                log.error("调用高德地图API获取地理位置信息失败");
-            }
-        } catch (Throwable ex) {
-            log.error("统计短链接访问异常", ex);
+        Runnable addResponseCookieTask = () -> {
+            // 用户首次访问 发放uvCookie
+            uv.set(UUID.fastUUID().toString());
+            Cookie uvCookie = new Cookie("uv", uv.get());
+            uvCookie.setMaxAge(60 * 60 * 24 * 365);
+            // 注意:StrUtil的sub是左闭右开的
+            uvCookie.setPath(StrUtil.sub(fullShortUrl, fullShortUrl.indexOf('/'), fullShortUrl.length()));
+            // 设置用户首次访问标识
+            uvFirstFlag.set(Boolean.TRUE);
+            ((HttpServletResponse) response).addCookie(uvCookie);
+            stringRedisTemplate.opsForSet().add("short-link:stats:uv:" + fullShortUrl, uv.get());
+        };
+        if (ArrayUtil.isEmpty(cookies)) {
+            // cookies数组为空 用户首次访问 执行addResponseCookieTask
+            addResponseCookieTask.run();
+        } else {
+            // cookies数组不为空 尝试获取uvCookie
+            Arrays.stream(cookies)
+                    .filter(cookie -> cookie.getName().equals("uv"))
+                    .findFirst()
+                    .map(Cookie::getValue)
+                    .ifPresentOrElse(each -> {
+                        // uvCookie存在 非首次访问
+                        uv.set(each);
+                        Long uvAdded = stringRedisTemplate.opsForSet().add(UV_STATS_SHORT_LINK_KEY + fullShortUrl, each);
+                        uvFirstFlag.set(uvAdded != null && uvAdded > 0L);
+                    }, addResponseCookieTask); // 首次访问 执行addResponseCookieTask
         }
+        String actualIP = LinkUtil.getActualIP((HttpServletRequest)request);
+        Long ipAdded = stringRedisTemplate.opsForSet().add(UIP_STATS_SHORT_LINK_KEY + fullShortUrl, actualIP);
+        boolean ipFirstFlag = ipAdded != null && ipAdded > 0L;
+        String os = LinkUtil.getOs((HttpServletRequest) request);
+        String browser = LinkUtil.getBrowser((HttpServletRequest) request);
+        String device = LinkUtil.getDevice((HttpServletRequest) request);
+        String network = LinkUtil.getNetwork((HttpServletRequest) request);
+
+        return ShortLinkStatsRecordDTO.builder()
+                .fullShortUrl(fullShortUrl)
+                .remoteAddr(actualIP)
+                .os(os)
+                .browser(browser)
+                .device(device)
+                .network(network)
+                .uv(uv.get())
+                .uvFirstFlag(uvFirstFlag.get())
+                .uipFirstFlag(ipFirstFlag)
+                .build();
     }
 }
