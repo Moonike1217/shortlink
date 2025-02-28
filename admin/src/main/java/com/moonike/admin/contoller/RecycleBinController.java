@@ -1,12 +1,12 @@
 package com.moonike.admin.contoller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.common.convention.result.Results;
-import com.moonike.admin.dto.req.SaveLinkToRecycleBinReqDTO;
-import com.moonike.admin.remote.ShortLinkRemoteService;
+import com.moonike.admin.remote.ShortLinkActualRemoteService;
 import com.moonike.admin.remote.dto.req.RecoverLinkFromRecycleBinReqDTO;
 import com.moonike.admin.remote.dto.req.RemoveLinkFromRecycleBinReqDTO;
+import com.moonike.admin.remote.dto.req.SaveLinkToRecycleBinReqDTO;
 import com.moonike.admin.remote.dto.resp.ShortLinkPageRespDTO;
 import com.moonike.admin.service.RecycleBinService;
 import lombok.RequiredArgsConstructor;
@@ -23,48 +23,40 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecycleBinController {
 
     private final RecycleBinService recycleBinService;
-    ShortLinkRemoteService shortLinkRemoteService = new ShortLinkRemoteService() {};
+    private final ShortLinkActualRemoteService shortLinkActualRemoteService;
 
     /**
-     * 中台远程调用 保存短链接到回收站
-     * @param requestParam
-     * @return
+     * 保存回收站
      */
-    @PostMapping("/api/shortlink/admin/v1/recycle-bin/")
-    public Result<Void> saveLinkToRecycleBin(@RequestBody SaveLinkToRecycleBinReqDTO requestParam) {
-        shortLinkRemoteService.saveLinkToRecycleBin(requestParam);
+    @PostMapping("/api/shortlink/admin/v1/recycle-bin/save")
+    public Result<Void> saveRecycleBin(@RequestBody SaveLinkToRecycleBinReqDTO requestParam) {
+        shortLinkActualRemoteService.saveRecycleBin(requestParam);
         return Results.success();
     }
 
     /**
-     * 中台远程调用 回收站内短链接分页查询服务
-     * @return
+     * 分页查询回收站短链接
      */
     @GetMapping("/api/shortlink/admin/v1/recycle-bin/page")
-    public Result<IPage<ShortLinkPageRespDTO>> pageRecycleBinShortLink() {
+    public Result<Page<ShortLinkPageRespDTO>> pageShortLink() {
         return recycleBinService.pageRecycleBinShortLink();
     }
 
     /**
-     * 中台远程调用 从回收站恢复短链接
-     * @param requestParam
-     * @return
+     * 恢复短链接
      */
     @PostMapping("/api/shortlink/admin/v1/recycle-bin/recover")
-    public Result<Void> recoverLinkFromRecycleBin(@RequestBody RecoverLinkFromRecycleBinReqDTO requestParam) {
-        shortLinkRemoteService.recoverLinkFromRecycleBin(requestParam);
+    public Result<Void> recoverRecycleBin(@RequestBody RecoverLinkFromRecycleBinReqDTO requestParam) {
+        shortLinkActualRemoteService.recoverRecycleBin(requestParam);
         return Results.success();
     }
 
     /**
-     * 中台远程调用 从回收站删除短链接
-     * @param requestParam
-     * @return
+     * 移除短链接
      */
-    @PostMapping("/api/shortlink/admin/v1/recycle-bin/delete")
-    public Result<Void> deleteLinkFromRecycleBin(@RequestBody RemoveLinkFromRecycleBinReqDTO requestParam) {
-        shortLinkRemoteService.removeLinkFromRecycleBin(requestParam);
+    @PostMapping("/api/shortlink/admin/v1/recycle-bin/remove")
+    public Result<Void> removeRecycleBin(@RequestBody RemoveLinkFromRecycleBinReqDTO requestParam) {
+        shortLinkActualRemoteService.removeRecycleBin(requestParam);
         return Results.success();
     }
-
 }

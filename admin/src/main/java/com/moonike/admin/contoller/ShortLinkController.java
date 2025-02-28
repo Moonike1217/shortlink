@@ -1,6 +1,6 @@
 package com.moonike.admin.contoller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.moonike.admin.common.convention.result.Result;
 import com.moonike.admin.common.convention.result.Results;
 import com.moonike.admin.dto.req.ShortLinkUpdateReqDTO;
@@ -40,13 +40,8 @@ public class ShortLinkController {
      * @return
      */
     @GetMapping("/api/shortlink/admin/v1/page")
-    public Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkPageReqDTO requestParam) {
-        return shortLinkActualRemoteService.pageShortLink(
-                requestParam.getGid(),
-                requestParam.getOrderTag(),
-                requestParam.getCurrent(),
-                requestParam.getSize()
-                );
+    public Result<Page<ShortLinkPageRespDTO>> pageShortLink(ShortLinkPageReqDTO requestParam) {
+        return shortLinkActualRemoteService.pageShortLink(requestParam);
     }
 
     /**

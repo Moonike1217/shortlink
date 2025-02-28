@@ -1,4 +1,4 @@
-package com.moonike.admin.dto.req;
+package com.moonike.admin.remote.dto.req;
 
 import lombok.Data;
 

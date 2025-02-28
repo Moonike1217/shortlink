@@ -29,7 +29,7 @@ public class RecycleBinController {
      * @param requestParam
      * @return
      */
-    @PostMapping("/api/shortlink/v1/recycle-bin/")
+    @PostMapping("/api/shortlink/v1/recycle-bin/save")
     public Result<Void> saveLinkToRecycleBin(@RequestBody SaveLinkToRecycleBinReqDTO requestParam) {
         recycleBinService.saveLinkToRecycleBin(requestParam);
         return Results.success();
@@ -61,8 +61,8 @@ public class RecycleBinController {
      * @param requestParam
      * @return
      */
-    @PostMapping("/api/shortlink/v1/recycle-bin/delete")
-    public Result<Void> deleteLinkFromRecycleBin(@RequestBody RemoveLinkFromRecycleBinReqDTO requestParam) {
+    @PostMapping("/api/shortlink/v1/recycle-bin/remove")
+    public Result<Void> removeLinkFromRecycleBin(@RequestBody RemoveLinkFromRecycleBinReqDTO requestParam) {
         recycleBinService.removeLinkFromRecycleBin(requestParam);
         return Results.success();
     }
